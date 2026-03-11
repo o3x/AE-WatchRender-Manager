@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.4.0] - Thu Mar 12 08:49:00 JST 2026
+- AE公式ドキュメントに基づくネットワークレンダリング仕様書 (`AE_WatchFolder_Specs.md`) を追加
+
 ## [1.3.0] - Thu Mar 12 08:39:00 JST 2026
 - GitHubリポジトリの作成と初期ソースコードのPush
 - C# / WPFプロジェクト向けの `.gitignore` を追加
