@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.4.1] - Thu Mar 12 08:52:00 JST 2026
+- 著作権の観点から仕様書 (`AE_WatchFolder_Specs.md`) をGitHubのリポジトリ管理から除外 (.gitignoreに追加)
+
 ## [1.4.0] - Thu Mar 12 08:49:00 JST 2026
 - AE公式ドキュメントに基づくネットワークレンダリング仕様書 (`AE_WatchFolder_Specs.md`) を追加
 

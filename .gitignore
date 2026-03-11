@@ -44,3 +44,6 @@ _ReSharper*/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+
+# Specs
+AE_WatchFolder_Specs.md
