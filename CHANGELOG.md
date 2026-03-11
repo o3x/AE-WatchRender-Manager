@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.2] - Thu Mar 12 08:58:00 JST 2026
+- 仕様書関連のファイルを `Specs/` ディレクトリへ移動
+- レンダリング制御ファイル(RCF)およびログ(HTML)の非公式仕様メモ (`Specs/RCF_HTML_etc.md`) を追加
+
 ## [1.4.1] - Thu Mar 12 08:52:00 JST 2026
 - 著作権の観点から仕様書 (`AE_WatchFolder_Specs.md`) をGitHubのリポジトリ管理から除外 (.gitignoreに追加)
 
