@@ -21,7 +21,7 @@ namespace AEWatchRenderManager.ViewModels
         private string _monitorPath = string.Empty;
         
         [ObservableProperty]
-        private int _scanIntervalSeconds = 3;
+        private int _scanIntervalSeconds = 60;
 
         [ObservableProperty]
         private string _moveTargetPath = string.Empty;

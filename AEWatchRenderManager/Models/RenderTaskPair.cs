@@ -40,7 +40,7 @@ namespace AEWatchRenderManager.Models
         private string _statusText = "Queued";
 
         [ObservableProperty]
-        private string _rowBackgroundColor = "White";
+        private string _rowForegroundColor = "Black";
 
         [ObservableProperty]
         private DateTime _lastUpdateTime;
@@ -81,15 +81,15 @@ namespace AEWatchRenderManager.Models
                 _ => "Unknown"
             };
 
-            RowBackgroundColor = value switch
+            RowForegroundColor = value switch
             {
-                RenderStatus.Queued => "White",
-                RenderStatus.Rendering => "LightGreen",
-                RenderStatus.Completed => "LightBlue",
-                RenderStatus.Failed => "LightPink",
-                RenderStatus.Suspended => "LightGray",
-                RenderStatus.Pending => "Moccasin",
-                _ => "White"
+                RenderStatus.Queued => "Black",
+                RenderStatus.Rendering => "Green",
+                RenderStatus.Completed => "Blue",
+                RenderStatus.Failed => "Red",
+                RenderStatus.Suspended => "Gray",
+                RenderStatus.Pending => "DarkOrange",
+                _ => "Black"
             };
         }
     }

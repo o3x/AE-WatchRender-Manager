@@ -39,7 +39,7 @@
             </ListView.InputBindings>
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
-                    <Setter Property="Background" Value="{Binding RowBackgroundColor}"/>
+                    <Setter Property="Foreground" Value="{Binding RowForegroundColor}"/>
                     <Setter Property="Tag" Value="{Binding DataContext, ElementName=taskListView}"/>
                     <Setter Property="ContextMenu">
                         <Setter.Value>
