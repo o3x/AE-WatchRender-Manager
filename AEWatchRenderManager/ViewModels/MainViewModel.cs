@@ -198,9 +198,9 @@ namespace AEWatchRenderManager.ViewModels
                         var txtPath = Path.Combine(targetDir, $"{folderName}レポート.txt");
                         var htmlName = ""; // HTMLは生成させない
                         
-                        var txtContent = $"レポート作成日 : \n\t{DateTime.Now:yyyy/MM/dd\tH:mm:ss}\n\nプロジェクト名 : {Path.GetFileName(file)}\n\n収集されたソースファイル先 : \n\t{targetDir}\n\n収集されたソースファイル : なし\n\n収集されたコンポジション :  \n\tコンポ 1\n\t\n収集されたファイルの数 :  0\n\n収集されたファイルのサイズ :  0 KB\n\nレンダリングプラグイン:\n\tクラシック3D\n\t\n";
+                        var txtContent = $"レポート作成日 : \r\n\t{DateTime.Now:yyyy/MM/dd\tH:mm:ss}\r\n\r\nプロジェクト名 : {Path.GetFileName(file)}\r\n\r\n収集されたソースファイル先 : \r\n\t{targetDir}\r\n\r\n収集されたソースファイル : なし\r\n\r\n収集されたコンポジション :  \r\n\tコンポ 1\r\n\t\r\n収集されたファイルの数 :  0\r\n\r\n収集されたファイルのサイズ :  0 KB\r\n\r\nレンダリングプラグイン:\r\n\tクラシック3D\r\n\t\r\n";
                         File.WriteAllText(txtPath, txtContent);
-                        File.WriteAllText(rcfPath, $"After Effects Render Control File\nmax_machines=99\nnum_machines=0\ninit=0\nhtml_init=0\nhtml_name=\"{htmlName}\"");
+                        File.WriteAllText(rcfPath, $"After Effects 13.2v1 Render Control File\r\nmax_machines=99\r\nnum_machines=0\r\ninit=0\r\nhtml_init=0\r\nhtml_name=\"{htmlName}\"\r\n");
                     }
                 }
                 catch (Exception ex)
