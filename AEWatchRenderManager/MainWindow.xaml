@@ -26,14 +26,15 @@
             <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Margin="5,0" Width="80"/>
         </StackPanel>
 
-        <ListView Grid.Row="2" ItemsSource="{Binding Tasks}">
+        <ListView Grid.Row="2" ItemsSource="{Binding Tasks}" x:Name="taskListView">
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
+                    <Setter Property="Tag" Value="{Binding DataContext, ElementName=taskListView}"/>
                     <Setter Property="ContextMenu">
                         <Setter.Value>
                             <ContextMenu>
-                                <MenuItem Header="別フォルダへ移動" Command="{Binding DataContext.MoveTaskCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                <MenuItem Header="削除" Command="{Binding DataContext.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                <MenuItem Header="別フォルダへ移動" Command="{Binding PlacementTarget.Tag.MoveTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                                <MenuItem Header="削除" Command="{Binding PlacementTarget.Tag.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
                             </ContextMenu>
                         </Setter.Value>
                     </Setter>

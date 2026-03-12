@@ -51,7 +51,7 @@ namespace AEWatchRenderManager.Services
             if (existingTask == null)
             {
                 var newTask = new RenderTaskPair(rcfPath);
-                Application.Current.Dispatcher.InvokeAsync(() => Tasks.Add(newTask));
+                Application.Current.Dispatcher.Invoke(() => Tasks.Add(newTask));
             }
         }
 
