@@ -15,7 +15,7 @@ namespace AEWatchRenderManager.Services
         {
             if (string.IsNullOrEmpty(task.RcfFilePath) || !File.Exists(task.RcfFilePath))
             {
-                task.Status = RenderStatus.Pending;
+                task.Status = RenderStatus.Queued;
                 return;
             }
 
@@ -63,22 +63,37 @@ namespace AEWatchRenderManager.Services
                 }
                 if (rcfContent.Contains("(Error", StringComparison.OrdinalIgnoreCase))
                 {
-                    task.Status = RenderStatus.Error;
+                    task.Status = RenderStatus.Failed;
                     return;
                 }
-
-                // 3. その他、レガシー・ハイブリッド判定
-                // init=0 の場合は未処理
-                if (task.InitStatus == 0)
+                if (rcfContent.Contains("(Suspended", StringComparison.OrdinalIgnoreCase))
+                {
+                    task.Status = RenderStatus.Suspended;
+                    return;
+                }
+                if (rcfContent.Contains("(Pending", StringComparison.OrdinalIgnoreCase))
                 {
                     task.Status = RenderStatus.Pending;
                     return;
                 }
+                if (rcfContent.Contains("(Queued", StringComparison.OrdinalIgnoreCase))
+                {
+                    task.Status = RenderStatus.Queued;
+                    return;
+                }
 
-                // init=1 だがログファイルがない場合は、処理開始（処理中）と判定
+                // 3. その他、レガシー・ハイブリッド判定
+                // init=0 の場合は待機中(Queued)
+                if (task.InitStatus == 0)
+                {
+                    task.Status = RenderStatus.Queued;
+                    return;
+                }
+
+                // init=1 だがログファイルがない場合は、処理開始（レンダリング中）と判定
                 if (string.IsNullOrEmpty(task.HtmlLogFilePath) || !File.Exists(task.HtmlLogFilePath))
                 {
-                    task.Status = RenderStatus.Processing;
+                    task.Status = RenderStatus.Rendering;
                     return;
                 }
 
@@ -93,7 +108,7 @@ namespace AEWatchRenderManager.Services
                 catch (IOException)
                 {
                     // ログがロック中の場合はレンダリング中
-                    task.Status = RenderStatus.Processing;
+                    task.Status = RenderStatus.Rendering;
                     return;
                 }
 
@@ -107,21 +122,21 @@ namespace AEWatchRenderManager.Services
                 else if (logContent.Contains("エラー", StringComparison.OrdinalIgnoreCase) || 
                          logContent.Contains("Error", StringComparison.OrdinalIgnoreCase))
                 {
-                    task.Status = RenderStatus.Error;
+                    task.Status = RenderStatus.Failed;
                 }
                 else
                 {
                     // ログはあるが完了やエラー表記がない場合は処理中
-                    task.Status = RenderStatus.Processing;
+                    task.Status = RenderStatus.Rendering;
                 }
             }
             catch (IOException)
             {
-                task.Status = RenderStatus.Processing;
+                task.Status = RenderStatus.Rendering;
             }
             catch (Exception)
             {
-                task.Status = RenderStatus.Error;
+                task.Status = RenderStatus.Failed;
             }
         }
 

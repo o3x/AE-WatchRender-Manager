@@ -72,7 +72,7 @@ namespace AEWatchRenderManager.ViewModels
             var currentTasks = Tasks.ToList();
             foreach (var task in currentTasks)
             {
-                if (task.Status != RenderStatus.Completed && task.Status != RenderStatus.Error)
+                if (task.Status != RenderStatus.Completed && task.Status != RenderStatus.Failed)
                 {
                     await StatusAnalyzer.AnalyzeAsync(task);
                 }

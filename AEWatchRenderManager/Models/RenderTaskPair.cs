@@ -8,10 +8,12 @@ namespace AEWatchRenderManager.Models
     // Version: 1.5.0
     public enum RenderStatus
     {
-        Pending,   // 未処理
-        Processing,// 処理中
+        Queued,    // 待機中
+        Rendering, // レンダリング中
         Completed, // 完了
-        Error      // エラー
+        Failed,    // エラー
+        Suspended, // 一時停止中
+        Pending    // 保留中
     }
 
     public partial class RenderTaskPair : ObservableObject
@@ -32,10 +34,13 @@ namespace AEWatchRenderManager.Models
         private string? _htmlLogFilePath;
 
         [ObservableProperty]
-        private RenderStatus _status = RenderStatus.Pending;
+        private RenderStatus _status = RenderStatus.Queued;
 
         [ObservableProperty]
-        private string _statusText = "未処理";
+        private string _statusText = "Queued";
+
+        [ObservableProperty]
+        private string _rowBackgroundColor = "White";
 
         [ObservableProperty]
         private DateTime _lastUpdateTime;
@@ -67,11 +72,24 @@ namespace AEWatchRenderManager.Models
         {
             StatusText = value switch
             {
-                RenderStatus.Pending => "未処理",
-                RenderStatus.Processing => "処理中",
-                RenderStatus.Completed => "完了",
-                RenderStatus.Error => "エラー",
-                _ => "不明"
+                RenderStatus.Queued => "Queued",
+                RenderStatus.Rendering => "Rendering",
+                RenderStatus.Completed => "Completed",
+                RenderStatus.Failed => "Failed",
+                RenderStatus.Suspended => "Suspended",
+                RenderStatus.Pending => "Pending",
+                _ => "Unknown"
+            };
+
+            RowBackgroundColor = value switch
+            {
+                RenderStatus.Queued => "White",
+                RenderStatus.Rendering => "LightGreen",
+                RenderStatus.Completed => "LightBlue",
+                RenderStatus.Failed => "LightPink",
+                RenderStatus.Suspended => "LightGray",
+                RenderStatus.Pending => "Moccasin",
+                _ => "White"
             };
         }
     }

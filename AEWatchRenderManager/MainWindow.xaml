@@ -37,6 +37,20 @@
             <ListView.InputBindings>
                 <KeyBinding Key="Delete" Command="{Binding DeleteTaskCommand}" CommandParameter="{Binding SelectedItems, ElementName=taskListView}"/>
             </ListView.InputBindings>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="Background" Value="{Binding RowBackgroundColor}"/>
+                    <Setter Property="Tag" Value="{Binding DataContext, ElementName=taskListView}"/>
+                    <Setter Property="ContextMenu">
+                        <Setter.Value>
+                            <ContextMenu>
+                                <MenuItem Header="別フォルダへ移動" Command="{Binding PlacementTarget.Tag.MoveTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                                <MenuItem Header="削除" Command="{Binding PlacementTarget.Tag.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                            </ContextMenu>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="移動先フォルダへ移動" Command="{Binding MoveTaskCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
