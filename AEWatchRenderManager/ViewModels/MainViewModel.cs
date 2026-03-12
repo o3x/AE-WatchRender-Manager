@@ -155,11 +155,12 @@ namespace AEWatchRenderManager.ViewModels
                         File.Copy(file, targetAepPath, true);
                         
                         var rcfPath = Path.Combine(targetDir, $"{folderName}_RCF.txt");
-                        var txtPath = Path.Combine(targetDir, $"{folderName}.txt");
-                        var htmlName = $"{folderName}.htm";
+                        var txtPath = Path.Combine(targetDir, $"{folderName}レポート.txt");
+                        var htmlName = ""; // HTMLは生成させない
                         
-                        File.WriteAllText(txtPath, string.Empty);
-                        File.WriteAllText(rcfPath, $"After Effects Render Control File\nmax_machines=5\nnum_machines=0\ninit=0\nhtml_init=1\nhtml_name=\"{htmlName}\"");
+                        var txtContent = $"レポート作成日 : \n\t{DateTime.Now:yyyy/MM/dd\tH:mm:ss}\n\nプロジェクト名 : {Path.GetFileName(file)}\n\n収集されたソースファイル先 : \n\t{targetDir}\n\n収集されたソースファイル : なし\n\n収集されたコンポジション :  \n\tコンポ 1\n\t\n収集されたファイルの数 :  0\n\n収集されたファイルのサイズ :  0 KB\n\nレンダリングプラグイン:\n\tクラシック3D\n\t\n";
+                        File.WriteAllText(txtPath, txtContent);
+                        File.WriteAllText(rcfPath, $"After Effects Render Control File\nmax_machines=99\nnum_machines=0\ninit=0\nhtml_init=0\nhtml_name=\"{htmlName}\"");
                     }
                 }
                 catch (Exception ex)

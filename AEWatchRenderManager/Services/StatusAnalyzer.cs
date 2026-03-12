@@ -55,7 +55,19 @@ namespace AEWatchRenderManager.Services
                     await ParseReportFileAsync(task);
                 }
 
-                // 2. ステータス判定（ハイブリッド）
+                // 2. 最確なステータス判定（_RCF.txt の内容を最優先）
+                if (rcfContent.Contains("(Finished", StringComparison.OrdinalIgnoreCase))
+                {
+                    task.Status = RenderStatus.Completed;
+                    return;
+                }
+                if (rcfContent.Contains("(Error", StringComparison.OrdinalIgnoreCase))
+                {
+                    task.Status = RenderStatus.Error;
+                    return;
+                }
+
+                // 3. その他、レガシー・ハイブリッド判定
                 // init=0 の場合は未処理
                 if (task.InitStatus == 0)
                 {
