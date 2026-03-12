@@ -41,18 +41,14 @@
                 <Style TargetType="ListViewItem">
                     <Setter Property="Foreground" Value="{Binding RowForegroundColor}"/>
                     <Setter Property="Tag" Value="{Binding DataContext, ElementName=taskListView}"/>
-                    <Setter Property="ContextMenu">
-                        <Setter.Value>
-                            <ContextMenu>
-                                <MenuItem Header="別フォルダへ移動" Command="{Binding PlacementTarget.Tag.MoveTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                                <MenuItem Header="削除" Command="{Binding PlacementTarget.Tag.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            </ContextMenu>
-                        </Setter.Value>
-                    </Setter>
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.ContextMenu>
                 <ContextMenu>
+                    <MenuItem Header="レンダリング情報の表示" Command="{Binding OpenRenderInfoCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <MenuItem Header="AEPファイルの表示" Command="{Binding ShowAepFileCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <MenuItem Header="レンダリング先を表示" Command="{Binding ShowRenderDestinationCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <Separator/>
                     <MenuItem Header="移動先フォルダへ移動" Command="{Binding MoveTaskCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <Separator/>
                     <MenuItem Header="ごみ箱へ削除" Command="{Binding DeleteTaskCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>

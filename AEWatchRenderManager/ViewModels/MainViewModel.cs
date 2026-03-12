@@ -3,6 +3,7 @@ using AEWatchRenderManager.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -207,6 +208,75 @@ namespace AEWatchRenderManager.ViewModels
                 {
                     System.Windows.MessageBox.Show($"ドロップ処理エラー: {Path.GetFileName(file)}\n{ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
+            }
+        }
+
+        [RelayCommand]
+        private void OpenRenderInfo(System.Collections.IList? items)
+        {
+            if (items == null || items.Count == 0) return;
+            var task = items.Cast<RenderTaskPair>().FirstOrDefault();
+            
+            if (task != null && !string.IsNullOrEmpty(task.HtmlLogFilePath) && File.Exists(task.HtmlLogFilePath))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(task.HtmlLogFilePath) { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"情報表示エラー: {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("HTMLログファイルが見つかりません。\n(テキストログの場合は開けません)", "情報", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            }
+        }
+
+        [RelayCommand]
+        private void ShowAepFile(System.Collections.IList? items)
+        {
+            if (items == null || items.Count == 0) return;
+            var task = items.Cast<RenderTaskPair>().FirstOrDefault();
+            
+            if (task != null && !string.IsNullOrEmpty(task.AepFilePath) && File.Exists(task.AepFilePath))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{task.AepFilePath}\"") { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"フォルダ展開エラー: {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("対象のAEPファイルが見つかりません。", "情報", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            }
+        }
+
+        [RelayCommand]
+        private void ShowRenderDestination(System.Collections.IList? items)
+        {
+            if (items == null || items.Count == 0) return;
+            var task = items.Cast<RenderTaskPair>().FirstOrDefault();
+            
+            if (task != null && !string.IsNullOrEmpty(task.ProjectFolderPath) && Directory.Exists(task.ProjectFolderPath))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(task.ProjectFolderPath) { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"フォルダ展開エラー: {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("対象のプロジェクトフォルダが見つかりません。", "情報", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             }
         }
     }
