@@ -82,11 +82,16 @@ namespace AEWatchRenderManager.ViewModels
         [RelayCommand]
         private void DeleteTask(RenderTaskPair? task)
         {
-            if (task == null) return;
+            if (task == null || string.IsNullOrEmpty(task.ProjectFolderPath)) return;
             try
             {
-                if (File.Exists(task.FilePath)) File.Delete(task.FilePath);
-                if (!string.IsNullOrEmpty(task.LogFilePath) && File.Exists(task.LogFilePath)) File.Delete(task.LogFilePath);
+                if (Directory.Exists(task.ProjectFolderPath))
+                {
+                    Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
+                        task.ProjectFolderPath,
+                        Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                        Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+                }
             }
             catch (Exception ex)
             {
@@ -97,25 +102,23 @@ namespace AEWatchRenderManager.ViewModels
         [RelayCommand]
         private void MoveTask(RenderTaskPair? task)
         {
-            if (task == null) return;
+            if (task == null || string.IsNullOrEmpty(task.ProjectFolderPath)) return;
 
             var dialog = new Microsoft.Win32.OpenFolderDialog
             {
-                Title = "移動先フォルダを選択してください"
+                Title = "移動先の親フォルダを選択してください"
             };
 
             if (dialog.ShowDialog() == true)
             {
-                var targetDir = dialog.FolderName;
                 try
                 {
-                    var newAepPath = Path.Combine(targetDir, task.FileName);
-                    if (File.Exists(task.FilePath)) File.Move(task.FilePath, newAepPath, true);
-
-                    if (!string.IsNullOrEmpty(task.LogFilePath) && File.Exists(task.LogFilePath))
+                    var folderName = Path.GetFileName(task.ProjectFolderPath);
+                    var targetPath = Path.Combine(dialog.FolderName, folderName);
+                    
+                    if (Directory.Exists(task.ProjectFolderPath))
                     {
-                        var newLogPath = Path.Combine(targetDir, Path.GetFileName(task.LogFilePath));
-                        File.Move(task.LogFilePath, newLogPath, true);
+                        Directory.Move(task.ProjectFolderPath, targetPath);
                     }
                 }
                 catch (Exception ex)
@@ -137,13 +140,34 @@ namespace AEWatchRenderManager.ViewModels
                     var ext = Path.GetExtension(file).ToLowerInvariant();
                     if (ext == ".aep")
                     {
-                        var dest = Path.Combine(MonitorPath, Path.GetFileName(file));
-                        File.Copy(file, dest, true);
+                        var baseName = Path.GetFileNameWithoutExtension(file);
+                        var folderName = baseName;
+                        var targetDir = Path.Combine(MonitorPath, folderName);
+                        
+                        int counter = 1;
+                        while (Directory.Exists(targetDir))
+                        {
+                            folderName = $"{baseName}_{counter}";
+                            targetDir = Path.Combine(MonitorPath, folderName);
+                            counter++;
+                        }
+                        
+                        Directory.CreateDirectory(targetDir);
+                        
+                        var targetAepPath = Path.Combine(targetDir, Path.GetFileName(file));
+                        File.Copy(file, targetAepPath, true);
+                        
+                        var rcfPath = Path.Combine(targetDir, $"{folderName}_RCF.txt");
+                        var txtPath = Path.Combine(targetDir, $"{folderName}.txt");
+                        var htmlName = $"{folderName}.htm";
+                        
+                        File.WriteAllText(txtPath, string.Empty);
+                        File.WriteAllText(rcfPath, $"After Effects Render Control File\nmax_machines=5\nnum_machines=0\ninit=0\nhtml_init=1\nhtml_name=\"{htmlName}\"");
                     }
                 }
                 catch (Exception ex)
                 {
-                    System.Windows.MessageBox.Show($"コピーエラー: {Path.GetFileName(file)}\n{ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    System.Windows.MessageBox.Show($"ドロップ処理エラー: {Path.GetFileName(file)}\n{ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
             }
         }

@@ -39,10 +39,10 @@
             </ListView.ItemContainerStyle>
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="ステータス" DisplayMemberBinding="{Binding StatusText}" Width="100"/>
-                    <GridViewColumn Header="ファイル名" DisplayMemberBinding="{Binding FileName}" Width="200"/>
+                    <GridViewColumn Header="ステータス" DisplayMemberBinding="{Binding StatusText}" Width="80"/>
+                    <GridViewColumn Header="プロジェクト名" DisplayMemberBinding="{Binding ProjectName}" Width="200"/>
                     <GridViewColumn Header="更新日時" DisplayMemberBinding="{Binding LastUpdateTime, StringFormat=yyyy-MM-dd HH:mm:ss}" Width="150"/>
-                    <GridViewColumn Header="パス" DisplayMemberBinding="{Binding FilePath}" Width="300"/>
+                    <GridViewColumn Header="プロジェクトフォルダ" DisplayMemberBinding="{Binding ProjectFolderPath}" Width="320"/>
                 </GridView>
             </ListView.View>
         </ListView>

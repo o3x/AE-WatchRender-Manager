@@ -4,8 +4,8 @@ using System.IO;
 
 namespace AEWatchRenderManager.Models
 {
-    // Date: Wed Mar 11 12:42:00 JST 2026
-    // Version: 1.0.0
+    // Date: Thu Mar 12 10:10:00 JST 2026
+    // Version: 1.5.0
     public enum RenderStatus
     {
         Pending,   // 未処理
@@ -17,10 +17,19 @@ namespace AEWatchRenderManager.Models
     public partial class RenderTaskPair : ObservableObject
     {
         [ObservableProperty]
-        private string _fileName = string.Empty;
+        private string _projectName = string.Empty;
 
         [ObservableProperty]
-        private string _filePath = string.Empty;
+        private string _projectFolderPath = string.Empty;
+
+        [ObservableProperty]
+        private string _rcfFilePath = string.Empty;
+
+        [ObservableProperty]
+        private string _aepFilePath = string.Empty;
+
+        [ObservableProperty]
+        private string? _htmlLogFilePath;
 
         [ObservableProperty]
         private RenderStatus _status = RenderStatus.Pending;
@@ -29,16 +38,29 @@ namespace AEWatchRenderManager.Models
         private string _statusText = "未処理";
 
         [ObservableProperty]
-        private string? _logFilePath;
-
-        [ObservableProperty]
         private DateTime _lastUpdateTime;
 
-        public RenderTaskPair(string aepPath)
+        // RCFファイルの内容
+        public int InitStatus { get; set; } = 0;
+
+        public RenderTaskPair(string rcfPath)
         {
-            FilePath = aepPath;
-            FileName = Path.GetFileName(aepPath);
-            LastUpdateTime = File.Exists(aepPath) ? File.GetLastWriteTime(aepPath) : DateTime.Now;
+            RcfFilePath = rcfPath;
+            ProjectFolderPath = Path.GetDirectoryName(rcfPath) ?? string.Empty;
+            
+            // 例: "MyProject_RCF.txt" -> "MyProject"
+            var fileName = Path.GetFileName(rcfPath);
+            if (fileName.EndsWith("_RCF.txt", StringComparison.OrdinalIgnoreCase))
+            {
+                ProjectName = fileName.Substring(0, fileName.Length - 8);
+            }
+            else
+            {
+                ProjectName = Path.GetFileNameWithoutExtension(rcfPath);
+            }
+
+            AepFilePath = Path.Combine(ProjectFolderPath, ProjectName + ".aep");
+            LastUpdateTime = File.Exists(rcfPath) ? File.GetLastWriteTime(rcfPath) : DateTime.Now;
         }
 
         partial void OnStatusChanged(RenderStatus value)
