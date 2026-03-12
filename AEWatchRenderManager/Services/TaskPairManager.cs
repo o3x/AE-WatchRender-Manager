@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace AEWatchRenderManager.Services
 {
@@ -14,28 +15,34 @@ namespace AEWatchRenderManager.Services
     {
         public ObservableCollection<RenderTaskPair> Tasks { get; } = new();
 
-        public void ProcessFileChange(string filePath)
+        public async Task SyncWithDirectoriesAsync(string[] subDirs)
         {
-            var fileName = Path.GetFileName(filePath);
-            
-            // _RCF.txtのみを監視のトリガーとする
-            if (fileName.EndsWith("_RCF.txt", StringComparison.OrdinalIgnoreCase))
+            var currentRcfPaths = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var dir in subDirs)
             {
-                AddOrUpdateRcfTask(filePath);
-            }
-            // ログファイル(.htm / .html)の更新はタイマー周期に任せるか、既存タスクに関連付け
-            else if (fileName.EndsWith(".htm", StringComparison.OrdinalIgnoreCase) || 
-                     fileName.EndsWith(".html", StringComparison.OrdinalIgnoreCase) ||
-                     fileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
-            {
-                // RCF以外で、かつ対応するプロジェクトフォルダ内のファイル変更なら更新時間を叩く
-                var dir = Path.GetDirectoryName(filePath);
-                var task = Tasks.FirstOrDefault(t => string.Equals(t.ProjectFolderPath, dir, StringComparison.OrdinalIgnoreCase));
-                if (task != null)
+                try
                 {
-                    task.LastUpdateTime = DateTime.Now;
+                    // フォルダ内の *_RCF.txt を探す
+                    var rcfFiles = Directory.GetFiles(dir, "*_RCF.txt");
+                    foreach (var rcf in rcfFiles)
+                    {
+                        currentRcfPaths.Add(rcf);
+                        AddOrUpdateRcfTask(rcf);
+                    }
                 }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
             }
+
+            // 存在しなくなったタスクのクリーンアップ
+            var toRemove = Tasks.Where(t => !currentRcfPaths.Contains(t.RcfFilePath)).ToList();
+            foreach (var t in toRemove)
+            {
+                Application.Current.Dispatcher.Invoke(() => Tasks.Remove(t));
+            }
+
+            await Task.CompletedTask;
         }
 
         private void AddOrUpdateRcfTask(string rcfPath)
@@ -45,10 +52,6 @@ namespace AEWatchRenderManager.Services
             {
                 var newTask = new RenderTaskPair(rcfPath);
                 Application.Current.Dispatcher.InvokeAsync(() => Tasks.Add(newTask));
-            }
-            else
-            {
-                existingTask.LastUpdateTime = File.Exists(rcfPath) ? File.GetLastWriteTime(rcfPath) : DateTime.Now;
             }
         }
 

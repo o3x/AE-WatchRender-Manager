@@ -19,33 +19,21 @@ namespace AEWatchRenderManager.ViewModels
 
         [ObservableProperty]
         private string _monitorPath = string.Empty;
+        
+        [ObservableProperty]
+        private int _scanIntervalSeconds = 3;
 
         public System.Collections.ObjectModel.ObservableCollection<RenderTaskPair> Tasks => _taskManager.Tasks;
 
-        private readonly FolderMonitorService _monitorService;
         private readonly TaskPairManager _taskManager;
-        private readonly DispatcherTimer _statusUpdateTimer;
+        private readonly DispatcherTimer _scanTimer;
 
         public MainViewModel()
         {
-            _monitorService = new FolderMonitorService();
             _taskManager = new TaskPairManager();
 
-            _monitorService.FileCreated += (s, e) => _taskManager.ProcessFileChange(e.FullPath);
-            _monitorService.FileChanged += (s, e) => _taskManager.ProcessFileChange(e.FullPath);
-            
-            _monitorService.FileDeleted += (s, e) => _taskManager.RemoveTask(e.FullPath);
-            _monitorService.FileRenamed += (s, e) => 
-            {
-                _taskManager.RemoveTask(e.OldFullPath);
-                _taskManager.ProcessFileChange(e.FullPath);
-            };
-
-            _statusUpdateTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(3)
-            };
-            _statusUpdateTimer.Tick += async (s, e) => await UpdateStatusesAsync();
+            _scanTimer = new DispatcherTimer();
+            _scanTimer.Tick += async (s, e) => await ScanMonitorFolderAsync();
         }
 
         [RelayCommand]
@@ -53,22 +41,31 @@ namespace AEWatchRenderManager.ViewModels
         {
             if (Directory.Exists(MonitorPath))
             {
-                _monitorService.StartMonitoring(MonitorPath);
-                _statusUpdateTimer.Start();
+                _scanTimer.Interval = TimeSpan.FromSeconds(ScanIntervalSeconds <= 0 ? 3 : ScanIntervalSeconds);
+                _scanTimer.Start();
                 WindowTitle = $"AE WatchRender Manager - 監視中: {MonitorPath}";
+                
+                // 初回スキャンを即座に実行
+                _ = ScanMonitorFolderAsync();
             }
         }
 
         [RelayCommand]
         private void StopMonitoring()
         {
-            _monitorService.StopMonitoring();
-            _statusUpdateTimer.Stop();
+            _scanTimer.Stop();
             WindowTitle = "AE WatchRender Manager";
         }
 
-        private async Task UpdateStatusesAsync()
+        private async Task ScanMonitorFolderAsync()
         {
+            if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath)) return;
+
+            // 監視パスの第一階層にあるサブフォルダを総走査
+            var subDirs = Directory.GetDirectories(MonitorPath);
+            await _taskManager.SyncWithDirectoriesAsync(subDirs);
+            
+            // ステータスの更新処理を走らせる
             var currentTasks = Tasks.ToList();
             foreach (var task in currentTasks)
             {
@@ -79,7 +76,7 @@ namespace AEWatchRenderManager.ViewModels
             }
         }
 
-        [RelayCommand]
+        // Deleted UpdateStatusesAsync        [RelayCommand]
         private void DeleteTask(RenderTaskPair? task)
         {
             if (task == null || string.IsNullOrEmpty(task.ProjectFolderPath)) return;

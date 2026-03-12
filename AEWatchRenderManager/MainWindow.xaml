@@ -16,12 +16,14 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="監視フォルダ:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBox Text="{Binding MonitorPath, UpdateSourceTrigger=PropertyChanged}" Width="400" Margin="0,0,10,0" VerticalAlignment="Center"/>
-            <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Width="80" Margin="0,0,10,0"/>
-            <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Width="80"/>
+        <!-- コントロールパネル -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+            <TextBlock Text="監視フォルダ:" VerticalAlignment="Center" Margin="5,0"/>
+            <TextBox Text="{Binding MonitorPath}" Width="300" Margin="5,0"/>
+            <TextBlock Text="スキャン間隔(秒):" VerticalAlignment="Center" Margin="15,0,5,0"/>
+            <TextBox Text="{Binding ScanIntervalSeconds}" Width="40" VerticalAlignment="Center" Margin="0,0,10,0" TextAlignment="Right"/>
+            <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Margin="5,0" Width="80"/>
+            <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Margin="5,0" Width="80"/>
         </StackPanel>
 
         <ListView Grid.Row="2" ItemsSource="{Binding Tasks}">
