@@ -23,6 +23,9 @@ namespace AEWatchRenderManager.ViewModels
         [ObservableProperty]
         private int _scanIntervalSeconds = 3;
 
+        [ObservableProperty]
+        private string _moveTargetPath = string.Empty;
+
         public System.Collections.ObjectModel.ObservableCollection<RenderTaskPair> Tasks => _taskManager.Tasks;
 
         private readonly TaskPairManager _taskManager;
@@ -76,42 +79,79 @@ namespace AEWatchRenderManager.ViewModels
             }
         }
 
-        // Deleted UpdateStatusesAsync        [RelayCommand]
-        private void DeleteTask(RenderTaskPair? task)
+        [RelayCommand]
+        private void BrowseMoveTarget()
         {
-            if (task == null || string.IsNullOrEmpty(task.ProjectFolderPath)) return;
-            try
+            var dialog = new Microsoft.Win32.OpenFolderDialog
             {
-                if (Directory.Exists(task.ProjectFolderPath))
-                {
-                    Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
-                        task.ProjectFolderPath,
-                        Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                        Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
-                }
-            }
-            catch (Exception ex)
+                Title = "移動先のルートフォルダを選択してください"
+            };
+            if (dialog.ShowDialog() == true)
             {
-                System.Windows.MessageBox.Show($"削除エラー: {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                MoveTargetPath = dialog.FolderName;
             }
         }
 
         [RelayCommand]
-        private void MoveTask(RenderTaskPair? task)
+        private void DeleteTask(System.Collections.IList? items)
         {
-            if (task == null || string.IsNullOrEmpty(task.ProjectFolderPath)) return;
+            if (items == null || items.Count == 0) return;
+            var tasks = items.Cast<RenderTaskPair>().ToList();
 
-            var dialog = new Microsoft.Win32.OpenFolderDialog
-            {
-                Title = "移動先の親フォルダを選択してください"
-            };
+            var result = System.Windows.MessageBox.Show(
+                $"{tasks.Count}件の監視アイテムをごみ箱へ移動しますか？\n(プロジェクトフォルダ全体が対象となります)",
+                "削除の確認",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning);
+                
+            if (result != System.Windows.MessageBoxResult.Yes) return;
 
-            if (dialog.ShowDialog() == true)
+            foreach (var task in tasks)
             {
+                if (string.IsNullOrEmpty(task.ProjectFolderPath)) continue;
+                try
+                {
+                    if (Directory.Exists(task.ProjectFolderPath))
+                    {
+                        Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
+                            task.ProjectFolderPath,
+                            Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                            Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"削除エラー ({task.ProjectName}): {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                }
+            }
+        }
+
+        [RelayCommand]
+        private void MoveTask(System.Collections.IList? items)
+        {
+            if (items == null || items.Count == 0) return;
+            if (string.IsNullOrEmpty(MoveTargetPath) || !Directory.Exists(MoveTargetPath))
+            {
+                System.Windows.MessageBox.Show("有効な移動先フォルダが設定されていません。\n上部の「移動先フォルダ」を指定してください。", "操作エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return;
+            }
+
+            var tasks = items.Cast<RenderTaskPair>().ToList();
+            var result = System.Windows.MessageBox.Show(
+                $"{tasks.Count}件の監視アイテムを以下のフォルダへ移動しますか？\n\n移動先: {MoveTargetPath}\n(プロジェクトフォルダ全体の移動)",
+                "移動の確認",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Question);
+                
+            if (result != System.Windows.MessageBoxResult.Yes) return;
+
+            foreach (var task in tasks)
+            {
+                if (string.IsNullOrEmpty(task.ProjectFolderPath)) continue;
                 try
                 {
                     var folderName = Path.GetFileName(task.ProjectFolderPath);
-                    var targetPath = Path.Combine(dialog.FolderName, folderName);
+                    var targetPath = Path.Combine(MoveTargetPath, folderName);
                     
                     if (Directory.Exists(task.ProjectFolderPath))
                     {
@@ -120,7 +160,7 @@ namespace AEWatchRenderManager.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    System.Windows.MessageBox.Show($"移動エラー: {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    System.Windows.MessageBox.Show($"移動エラー ({task.ProjectName}): {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
             }
         }
