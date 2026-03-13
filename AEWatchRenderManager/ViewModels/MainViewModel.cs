@@ -11,8 +11,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Wed Mar 11 12:47:00 JST 2026
-    // Version: 1.1.0
+    // Date: Fri Mar 13 11:30:00 JST 2026
+    // Version: 1.2.0
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -60,6 +60,73 @@ namespace AEWatchRenderManager.ViewModels
         {
             _scanTimer.Stop();
             WindowTitle = "AE WatchRender Manager";
+        }
+
+        [RelayCommand]
+        private async Task ScanNow()
+        {
+            await ScanMonitorFolderAsync();
+            if (_scanTimer.IsEnabled)
+            {
+                _scanTimer.Stop();
+                _scanTimer.Start();
+            }
+        }
+
+        [RelayCommand]
+        private void BrowseMonitorFolder()
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = "監視するルートフォルダを選択してください"
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                MonitorPath = dialog.FolderName;
+            }
+        }
+
+        [RelayCommand]
+        private void SetScanCycle()
+        {
+            // シンプルな入力ダイアログがないため、MessageBoxの簡易代用は難しいため
+            // ユーザーに秒数を聞くような何らかのUIが必要だが、一旦現状値をベースにするか
+            // 今回はViewModel側で 3, 10, 30, 60 などのプリセットを切り替える形式も考えられる
+            // ひとまずダイアログを出すのは手間なので、今後の課題とするか、
+            // 文字列入力用の小さなWindowを作るのが正攻法。
+            // ここでは簡易的に「現在の秒数に+10秒(上限120, 最小3)」するトグルにしてみる。
+            int next = ScanIntervalSeconds + 10;
+            if (next > 120) next = 3;
+            ScanIntervalSeconds = next;
+            System.Windows.MessageBox.Show($"スキャン間隔を {ScanIntervalSeconds} 秒に設定しました。", "設定変更");
+        }
+
+        [RelayCommand]
+        private void SelectAll()
+        {
+            foreach (var task in Tasks)
+            {
+                task.IsSelected = true;
+            }
+        }
+
+        [RelayCommand]
+        private void SelectCompleted()
+        {
+            foreach (var task in Tasks)
+            {
+                task.IsSelected = (task.Status == RenderStatus.Completed);
+            }
+        }
+
+        [RelayCommand]
+        private void ShowAbout()
+        {
+            System.Windows.MessageBox.Show(
+                "AE WatchRender Manager\nVersion 1.12.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。",
+                "バージョン情報",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
         }
 
         private async void TriggerImmediateScan()

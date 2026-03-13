@@ -6,40 +6,59 @@
         xmlns:local="clr-namespace:AEWatchRenderManager"
         xmlns:vm="clr-namespace:AEWatchRenderManager.ViewModels"
         mc:Ignorable="d"
-        Title="{Binding WindowTitle}" Height="450" Width="800">
-    <Window.DataContext>
-        <vm:MainViewModel />
-    </Window.DataContext>
-    <Grid Margin="10" AllowDrop="True" Drop="Grid_Drop">
+        Title="{Binding WindowTitle}" Height="600" Width="900"
+    d:DataContext="{d:DesignInstance vm:MainViewModel}">
+    <Window.InputBindings>
+        <KeyBinding Key="F5" Command="{Binding ScanNowCommand}"/>
+    </Window.InputBindings>
+    <Grid AllowDrop="True" Drop="Grid_Drop">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <!-- コントロールパネル -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
-            <TextBlock Text="監視フォルダ:" VerticalAlignment="Center" Margin="5,0"/>
-            <TextBox Text="{Binding MonitorPath}" Width="300" Margin="5,0"/>
-            <TextBlock Text="スキャン(秒):" VerticalAlignment="Center" Margin="5,0,5,0"/>
-            <TextBox Text="{Binding ScanIntervalSeconds}" Width="40" VerticalAlignment="Center" Margin="0,0,10,0" TextAlignment="Right"/>
-            <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Margin="5,0" Width="80"/>
-            <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Margin="5,0" Width="80"/>
-        </StackPanel>
-        
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5,0,5,5">
-            <TextBlock Text="移動先フォルダ:" VerticalAlignment="Center" Margin="5,0"/>
-            <TextBox Text="{Binding MoveTargetPath}" Width="300" Margin="5,0"/>
-            <Button Content="参照..." Command="{Binding BrowseMoveTargetCommand}" Margin="5,0" Width="60"/>
-            <TextBlock Text="(リスト右クリックまたはDELキーで操作)" Foreground="Gray" VerticalAlignment="Center" Margin="20,0,0,0"/>
-        </StackPanel>
 
-        <ListView Grid.Row="2" ItemsSource="{Binding Tasks}" x:Name="taskListView" SelectionMode="Extended">
+        <!-- メニューバー -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="セットアップ(_S)">
+                <MenuItem Header="監視フォルダの設定..." Command="{Binding BrowseMonitorFolderCommand}"/>
+                <MenuItem Header="移動先フォルダの設定..." Command="{Binding BrowseMoveTargetCommand}"/>
+            </MenuItem>
+            <MenuItem Header="操作(_T)">
+                <MenuItem Header="今すぐスキャン(F5)" Command="{Binding ScanNowCommand}"/>
+                <MenuItem Header="スキャンサイクルの設定..." Command="{Binding SetScanCycleCommand}"/>
+                <Separator/>
+                <MenuItem Header="すべて選択" Command="{Binding SelectAllCommand}"/>
+                <MenuItem Header="完了済みを選択" Command="{Binding SelectCompletedCommand}"/>
+            </MenuItem>
+            <MenuItem Header="ヘルプ(_H)">
+                <MenuItem Header="バージョン情報" Command="{Binding ShowAboutCommand}"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- 操作パネル -->
+        <Border Grid.Row="1" Background="#F0F0F0" Padding="10" BorderBrush="LightGray" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Width="100" Height="30" Margin="0,0,10,0" Background="#E3F2FD"/>
+                <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Width="100" Height="30" Margin="0,0,10,0"/>
+                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="30" FontWeight="Bold"/>
+                
+                <TextBlock VerticalAlignment="Center" Margin="20,0,0,0">
+                    <Run Text="監視中: " Foreground="Gray"/>
+                    <Run Text="{Binding MonitorPath, Mode=OneWay}"/>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <ListView Grid.Row="2" ItemsSource="{Binding Tasks}" x:Name="taskListView" SelectionMode="Extended" Margin="10">
             <ListView.InputBindings>
                 <KeyBinding Key="Delete" Command="{Binding DeleteTaskCommand}" CommandParameter="{Binding SelectedItems, ElementName=taskListView}"/>
+                <KeyBinding Key="F5" Command="{Binding ScanNowCommand}"/>
             </ListView.InputBindings>
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="Foreground" Value="{Binding RowForegroundColor}"/>
+                    <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
                     <Setter Property="Tag" Value="{Binding DataContext, ElementName=taskListView}"/>
                 </Style>
             </ListView.ItemContainerStyle>
@@ -56,10 +75,10 @@
             </ListView.ContextMenu>
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="ステータス" DisplayMemberBinding="{Binding StatusText}" Width="80"/>
-                    <GridViewColumn Header="プロジェクト名" DisplayMemberBinding="{Binding ProjectName}" Width="200"/>
-                    <GridViewColumn Header="更新日時" DisplayMemberBinding="{Binding LastUpdateTime, StringFormat=yyyy-MM-dd HH:mm:ss}" Width="150"/>
-                    <GridViewColumn Header="プロジェクトフォルダ" DisplayMemberBinding="{Binding ProjectFolderPath}" Width="320"/>
+                    <GridViewColumn Header="ステータス" DisplayMemberBinding="{Binding StatusText}" Width="100"/>
+                    <GridViewColumn Header="レンダリングアイテム" DisplayMemberBinding="{Binding ProjectName}" Width="200"/>
+                    <GridViewColumn Header="最終更新" DisplayMemberBinding="{Binding LastUpdateTime, StringFormat=MM/dd HH:mm:ss}" Width="120"/>
+                    <GridViewColumn Header="パス" DisplayMemberBinding="{Binding ProjectFolderPath}" Width="350"/>
                 </GridView>
             </ListView.View>
         </ListView>

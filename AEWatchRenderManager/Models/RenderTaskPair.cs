@@ -16,8 +16,13 @@ namespace AEWatchRenderManager.Models
         Pending    // 保留中
     }
 
+    // Date: Fri Mar 13 11:30:00 JST 2026
+    // Version: 1.6.0
     public partial class RenderTaskPair : ObservableObject
     {
+        [ObservableProperty]
+        private bool _isSelected;
+
         [ObservableProperty]
         private string _projectName = string.Empty;
 
