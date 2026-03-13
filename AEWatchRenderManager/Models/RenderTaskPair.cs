@@ -16,8 +16,8 @@ namespace AEWatchRenderManager.Models
         Pending    // 保留中
     }
 
-    // Date: Fri Mar 13 11:30:00 JST 2026
-    // Version: 1.6.0
+    // Date: Fri Mar 13 11:55:00 JST 2026
+    // Version: 1.7.0
     public partial class RenderTaskPair : ObservableObject
     {
         [ObservableProperty]
@@ -34,6 +34,9 @@ namespace AEWatchRenderManager.Models
 
         [ObservableProperty]
         private string _aepFilePath = string.Empty;
+
+        [ObservableProperty]
+        private string _outputFolderPath = string.Empty;
 
         [ObservableProperty]
         private string? _htmlLogFilePath;
@@ -69,7 +72,26 @@ namespace AEWatchRenderManager.Models
                 ProjectName = Path.GetFileNameWithoutExtension(rcfPath);
             }
 
-            AepFilePath = Path.Combine(ProjectFolderPath, ProjectName + ".aep");
+            // AEPパスの決定ロジック強化
+            var exactAep = Path.Combine(ProjectFolderPath, ProjectName + ".aep");
+            if (File.Exists(exactAep))
+            {
+                AepFilePath = exactAep;
+            }
+            else
+            {
+                // フォールバック: フォルダ内の唯一のAEP、または最初に見つかったAEP
+                try
+                {
+                    var aepFiles = Directory.GetFiles(ProjectFolderPath, "*.aep");
+                    AepFilePath = aepFiles.FirstOrDefault() ?? exactAep;
+                }
+                catch
+                {
+                    AepFilePath = exactAep;
+                }
+            }
+            
             LastUpdateTime = File.Exists(rcfPath) ? File.GetLastWriteTime(rcfPath) : DateTime.Now;
         }
 

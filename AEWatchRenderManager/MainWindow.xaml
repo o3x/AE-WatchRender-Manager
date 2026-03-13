@@ -47,8 +47,30 @@
                 <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="30" FontWeight="Bold"/>
                 
                 <TextBlock VerticalAlignment="Center" Margin="20,0,0,0">
-                    <Run Text="監視中: " Foreground="Gray"/>
-                    <Run Text="{Binding MonitorPath, Mode=OneWay}"/>
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="未監視: "/>
+                            <Setter Property="Foreground" Value="Gray"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
+                                    <Setter Property="Text" Value="監視中: "/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Text="{Binding MonitorPath, Mode=OneWay}" VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="Gray"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
+                                    <Setter Property="Foreground" Value="Black"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
                 </TextBlock>
             </StackPanel>
         </Border>

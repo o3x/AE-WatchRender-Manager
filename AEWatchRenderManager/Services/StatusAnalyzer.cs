@@ -7,8 +7,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Thu Mar 12 10:13:00 JST 2026
-    // Version: 1.5.0
+    // Date: Fri Mar 13 12:05:00 JST 2026
+    // Version: 1.6.0
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -129,6 +129,9 @@ namespace AEWatchRenderManager.Services
                     // ログはあるが完了やエラー表記がない場合は処理中
                     task.Status = RenderStatus.Rendering;
                 }
+
+                // 出力先パスの特定試行（完了時またはログがある場合）
+                await TryUpdateOutputPathAsync(task);
             }
             catch (IOException)
             {
@@ -174,6 +177,46 @@ namespace AEWatchRenderManager.Services
                     {
                         // UI表示上で、プロジェクト名が RCF ファイル名と異なる場合は更新する
                         Application.Current.Dispatcher.Invoke(() => task.ProjectName = parsedName);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private static async Task TryUpdateOutputPathAsync(RenderTaskPair task)
+        {
+            try
+            {
+                // (Logs)フォルダ内の item*.htm を探す
+                var logsDir = Path.Combine(task.ProjectFolderPath, $"({task.ProjectName}_00_Logs)");
+                if (!Directory.Exists(logsDir))
+                {
+                    // フォルダ名に一致するものがない場合、(Logs)で終わるフォルダを探す
+                    var dirs = Directory.GetDirectories(task.ProjectFolderPath, "*_Logs)");
+                    logsDir = dirs.FirstOrDefault();
+                }
+
+                if (logsDir != null && Directory.Exists(logsDir))
+                {
+                    var itemFiles = Directory.GetFiles(logsDir, "item*.htm");
+                    foreach (var itemFile in itemFiles)
+                    {
+                        using var fs = new FileStream(itemFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        using var sr = new StreamReader(fs, System.Text.Encoding.GetEncoding("shift-jis"));
+                        var content = await sr.ReadToEndAsync();
+
+                        // <LI> C:\tmp\コンポ 1.[fileExtension] 形式を抽出
+                        var match = Regex.Match(content, @"<LI>\s*([a-zA-Z]:\\[^<]+)");
+                        if (match.Success)
+                        {
+                            var fullPath = match.Groups[1].Value.Trim();
+                            var outDir = Path.GetDirectoryName(fullPath);
+                            if (!string.IsNullOrEmpty(outDir))
+                            {
+                                Application.Current.Dispatcher.Invoke(() => task.OutputFolderPath = outDir);
+                                return; // ひとつ見つかれば終了
+                            }
+                        }
                     }
                 }
             }

@@ -11,10 +11,13 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Fri Mar 13 11:30:00 JST 2026
-    // Version: 1.2.0
+    // Date: Fri Mar 13 12:10:00 JST 2026
+    // Version: 1.3.0
     public partial class MainViewModel : ObservableObject
     {
+        [ObservableProperty]
+        private bool _isMonitoring;
+
         [ObservableProperty]
         private string _windowTitle = "AE WatchRender Manager";
 
@@ -106,6 +109,7 @@ namespace AEWatchRenderManager.ViewModels
             {
                 _scanTimer.Interval = TimeSpan.FromSeconds(ScanIntervalSeconds <= 0 ? 3 : ScanIntervalSeconds);
                 _scanTimer.Start();
+                IsMonitoring = true;
                 UpdateWindowTitle();
                 
                 // 初回スキャンを即座に実行
@@ -117,6 +121,7 @@ namespace AEWatchRenderManager.ViewModels
         private void StopMonitoring()
         {
             _scanTimer.Stop();
+            IsMonitoring = false;
             UpdateWindowTitle();
         }
 
