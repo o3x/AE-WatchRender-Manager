@@ -27,6 +27,17 @@ namespace AEWatchRenderManager.ViewModels
         [ObservableProperty]
         private string _moveTargetPath = string.Empty;
 
+        partial void OnMonitorPathChanged(string value) => SaveSettings();
+        partial void OnMoveTargetPathChanged(string value) => SaveSettings();
+        partial void OnScanIntervalSecondsChanged(int value)
+        {
+            if (_scanTimer != null && _scanTimer.IsEnabled)
+            {
+                _scanTimer.Interval = TimeSpan.FromSeconds(value <= 0 ? 3 : value);
+            }
+            SaveSettings();
+        }
+
         public System.Collections.ObjectModel.ObservableCollection<RenderTaskPair> Tasks => _taskManager.Tasks;
 
         private readonly TaskPairManager _taskManager;
@@ -37,18 +48,65 @@ namespace AEWatchRenderManager.ViewModels
         {
             _taskManager = new TaskPairManager();
 
+            // 設定のロード
+            var settings = SettingsService.Load();
+            _monitorPath = settings.MonitorPath;
+            _moveTargetPath = settings.MoveTargetPath;
+            _scanIntervalSeconds = settings.ScanIntervalSeconds;
+
             _scanTimer = new DispatcherTimer();
             _scanTimer.Tick += async (s, e) => await ScanMonitorFolderAsync();
+
+            UpdateWindowTitle();
+        }
+
+        private void SaveSettings()
+        {
+            SettingsService.Save(new AppSettings
+            {
+                MonitorPath = MonitorPath,
+                MoveTargetPath = MoveTargetPath,
+                ScanIntervalSeconds = ScanIntervalSeconds
+            });
+        }
+
+        private void UpdateWindowTitle()
+        {
+            if (_scanTimer != null && _scanTimer.IsEnabled)
+            {
+                WindowTitle = $"AE WatchRender Manager [監視中: {MonitorPath}]";
+            }
+            else
+            {
+                WindowTitle = "AE WatchRender Manager";
+            }
         }
 
         [RelayCommand]
         private void StartMonitoring()
         {
+            if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath))
+            {
+                var dialog = new Microsoft.Win32.OpenFolderDialog
+                {
+                    Title = "監視するルートフォルダを選択してください"
+                };
+                if (dialog.ShowDialog() == true)
+                {
+                    MonitorPath = dialog.FolderName;
+                }
+                else
+                {
+                    // キャンセルされたら何もしない
+                    return;
+                }
+            }
+
             if (Directory.Exists(MonitorPath))
             {
                 _scanTimer.Interval = TimeSpan.FromSeconds(ScanIntervalSeconds <= 0 ? 3 : ScanIntervalSeconds);
                 _scanTimer.Start();
-                WindowTitle = $"AE WatchRender Manager - 監視中: {MonitorPath}";
+                UpdateWindowTitle();
                 
                 // 初回スキャンを即座に実行
                 _ = ScanMonitorFolderAsync();
@@ -59,7 +117,7 @@ namespace AEWatchRenderManager.ViewModels
         private void StopMonitoring()
         {
             _scanTimer.Stop();
-            WindowTitle = "AE WatchRender Manager";
+            UpdateWindowTitle();
         }
 
         [RelayCommand]
@@ -139,13 +197,7 @@ namespace AEWatchRenderManager.ViewModels
             _scanTimer.Start();
         }
 
-        partial void OnScanIntervalSecondsChanged(int value)
-        {
-            if (_scanTimer != null && _scanTimer.IsEnabled)
-            {
-                _scanTimer.Interval = TimeSpan.FromSeconds(value <= 0 ? 3 : value);
-            }
-        }
+
 
         private async Task ScanMonitorFolderAsync()
         {
@@ -237,7 +289,7 @@ namespace AEWatchRenderManager.ViewModels
 
             var tasks = items.Cast<RenderTaskPair>().ToList();
             var result = System.Windows.MessageBox.Show(
-                $"{tasks.Count}件の監視アイテムを以下のフォルダへ移動しますか？\n\n移動先: {MoveTargetPath}\n(プロジェクトフォルダ全体の移動)",
+                $"{tasks.Count}件の監視アイテムを以下のフォルダへ移動しますか？\n\n移動先:\n{MoveTargetPath}\n\n(プロジェクトフォルダ全体の移動)",
                 "移動の確認",
                 System.Windows.MessageBoxButton.YesNo,
                 System.Windows.MessageBoxImage.Question);

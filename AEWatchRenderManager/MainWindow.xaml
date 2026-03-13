@@ -8,6 +8,9 @@
         mc:Ignorable="d"
         Title="{Binding WindowTitle}" Height="600" Width="900"
     d:DataContext="{d:DesignInstance vm:MainViewModel}">
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
     <Window.InputBindings>
         <KeyBinding Key="F5" Command="{Binding ScanNowCommand}"/>
     </Window.InputBindings>
