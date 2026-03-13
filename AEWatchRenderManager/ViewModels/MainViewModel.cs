@@ -31,6 +31,7 @@ namespace AEWatchRenderManager.ViewModels
 
         private readonly TaskPairManager _taskManager;
         private readonly DispatcherTimer _scanTimer;
+        private bool _isScanning = false;
 
         public MainViewModel()
         {
@@ -61,22 +62,40 @@ namespace AEWatchRenderManager.ViewModels
             WindowTitle = "AE WatchRender Manager";
         }
 
+        partial void OnScanIntervalSecondsChanged(int value)
+        {
+            if (_scanTimer != null && _scanTimer.IsEnabled)
+            {
+                _scanTimer.Interval = TimeSpan.FromSeconds(value <= 0 ? 3 : value);
+            }
+        }
+
         private async Task ScanMonitorFolderAsync()
         {
             if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath)) return;
+            if (_isScanning) return;
 
-            // 監視パスの第一階層にあるサブフォルダを総走査
-            var subDirs = Directory.GetDirectories(MonitorPath);
-            await _taskManager.SyncWithDirectoriesAsync(subDirs);
-            
-            // ステータスの更新処理を走らせる
-            var currentTasks = Tasks.ToList();
-            foreach (var task in currentTasks)
+            try
             {
-                if (task.Status != RenderStatus.Completed && task.Status != RenderStatus.Failed)
+                _isScanning = true;
+
+                // 監視パスの第一階層にあるサブフォルダを総走査 (IO処理はTask.Runで実行)
+                var subDirs = await Task.Run(() => Directory.GetDirectories(MonitorPath));
+                await _taskManager.SyncWithDirectoriesAsync(subDirs);
+                
+                // ステータスの更新処理を走らせる
+                var currentTasks = Tasks.ToList();
+                foreach (var task in currentTasks)
                 {
-                    await StatusAnalyzer.AnalyzeAsync(task);
+                    if (task.Status != RenderStatus.Completed && task.Status != RenderStatus.Failed)
+                    {
+                        await StatusAnalyzer.AnalyzeAsync(task);
+                    }
                 }
+            }
+            finally
+            {
+                _isScanning = false;
             }
         }
 
