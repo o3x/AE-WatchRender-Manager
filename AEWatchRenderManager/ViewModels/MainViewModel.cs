@@ -62,6 +62,16 @@ namespace AEWatchRenderManager.ViewModels
             WindowTitle = "AE WatchRender Manager";
         }
 
+        private async void TriggerImmediateScan()
+        {
+            if (!_scanTimer.IsEnabled) return;
+
+            // タイマーを一度止めて、スキャン後に再開（リセット）
+            _scanTimer.Stop();
+            await ScanMonitorFolderAsync();
+            _scanTimer.Start();
+        }
+
         partial void OnScanIntervalSecondsChanged(int value)
         {
             if (_scanTimer != null && _scanTimer.IsEnabled)
@@ -144,6 +154,8 @@ namespace AEWatchRenderManager.ViewModels
                     System.Windows.MessageBox.Show($"削除エラー ({task.ProjectName}): {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
             }
+
+            TriggerImmediateScan();
         }
 
         [RelayCommand]
@@ -183,6 +195,8 @@ namespace AEWatchRenderManager.ViewModels
                     System.Windows.MessageBox.Show($"移動エラー ({task.ProjectName}): {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
             }
+
+            TriggerImmediateScan();
         }
 
         [RelayCommand]
@@ -228,6 +242,8 @@ namespace AEWatchRenderManager.ViewModels
                     System.Windows.MessageBox.Show($"ドロップ処理エラー: {Path.GetFileName(file)}\n{ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
             }
+
+            TriggerImmediateScan();
         }
 
         [RelayCommand]
