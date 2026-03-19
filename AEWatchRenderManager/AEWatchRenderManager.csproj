@@ -8,6 +8,13 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <!-- Publish 時のデフォルト設定 (プロファイル未指定時のフォールバック) -->
+  <!-- 通常は Properties/PublishProfiles/win-x64.pubxml を使用すること -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <!-- 単一ファイルPublish時はPDBをEXEに埋め込み、余分なファイルを出さない -->
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
   </ItemGroup>

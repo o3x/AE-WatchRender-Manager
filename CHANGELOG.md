@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.15.2] - Thu Mar 19 19:30:00 JST 2026
+- 「バージョン情報」ダイアログの表示バージョンを最新（1.15.1 → 1.15.2）に修正
+- 同ダイアログに著作権表記（Copyright © 2026 OHYAMA Yoshihsia / Apache License 2.0）を追加
+
+## [1.15.1] - Thu Mar 19 18:52:42 JST 2026
+- パブリッシュプロファイル `Properties/PublishProfiles/win-x64.pubxml` を追加。`dotnet publish -p:PublishProfile=win-x64` で常に `bin\Release\net8.0-windows\win-x64\publish\` 配下に単一 EXE のみ出力されるよう統一
+- `.csproj` に `PublishSingleFile=true` 時の `DebugType=embedded` 設定を追加し、PDB ファイルが別途生成されないよう整理
+
+## [1.15.0] - Thu Mar 19 18:52:42 JST 2026
+- スキャンサイクル設定をモーダルダイアログ化。メニューから選ぶと `Views/ScanCycleDialog` が開き、現在の秒数がテキストボックスに表示された状態で任意の秒数を入力・確定できるよう変更（数字以外の入力は弾く）
+- スキャン完了時に操作パネル右端へ「最終スキャン: HH:mm:ss　サイクル: XX 秒」を表示する機能を追加。追加タイマーなし・スキャンのタイミングのみ更新するため負荷ゼロ
+
 ## [1.14.1] - Sat Mar 14 19:09:07 JST 2026
 - プロジェクトに Apache License 2.0 (`LICENSE` ファイル) を追加し、README にライセンス情報と著作権（署名）を記載
 - メインウィンドウのソースコードヘッダーにライセンス定型文を追記し、更新日時を反映

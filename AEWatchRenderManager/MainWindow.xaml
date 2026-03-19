@@ -41,38 +41,46 @@
 
         <!-- 操作パネル -->
         <Border Grid.Row="1" Background="#F0F0F0" Padding="10" BorderBrush="LightGray" BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal">
-                <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Width="100" Height="30" Margin="0,0,10,0" Background="#E3F2FD"/>
-                <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Width="100" Height="30" Margin="0,0,10,0"/>
-                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="30" FontWeight="Bold"/>
-                
-                <TextBlock VerticalAlignment="Center" Margin="20,0,0,0">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Text" Value="未監視: "/>
-                            <Setter Property="Foreground" Value="Gray"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
-                                    <Setter Property="Text" Value="監視中: "/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
-                <TextBlock Text="{Binding MonitorPath, Mode=OneWay}" VerticalAlignment="Center">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="Gray"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
-                                    <Setter Property="Foreground" Value="Black"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
-            </StackPanel>
+            <Grid>
+                <!-- 左側: ボタン群 + 監視状態 -->
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Width="100" Height="30" Margin="0,0,10,0" Background="#E3F2FD"/>
+                    <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Width="100" Height="30" Margin="0,0,10,0"/>
+                    <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="30" FontWeight="Bold"/>
+
+                    <TextBlock VerticalAlignment="Center" Margin="20,0,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="未監視: "/>
+                                <Setter Property="Foreground" Value="Gray"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
+                                        <Setter Property="Text" Value="監視中: "/>
+                                        <Setter Property="Foreground" Value="Black"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Text="{Binding MonitorPath, Mode=OneWay}" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="Gray"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
+                                        <Setter Property="Foreground" Value="Black"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- 右側: スキャン状態（スキャン完了時のみ更新） -->
+                <TextBlock Text="{Binding ScanStatusText}"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Foreground="Gray" FontSize="11"/>
+            </Grid>
         </Border>
 
         <ListView Grid.Row="2" ItemsSource="{Binding Tasks}" x:Name="taskListView" SelectionMode="Extended" Margin="10">

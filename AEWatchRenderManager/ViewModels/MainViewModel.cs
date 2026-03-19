@@ -11,8 +11,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Fri Mar 13 12:10:00 JST 2026
-    // Version: 1.3.0
+    // Date: Thu Mar 19 19:30:00 JST 2026
+    // Version: 1.4.1
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -29,6 +29,10 @@ namespace AEWatchRenderManager.ViewModels
 
         [ObservableProperty]
         private string _moveTargetPath = string.Empty;
+
+        /// <summary>最終スキャン時刻とサイクル秒数の表示テキスト。スキャン完了時のみ更新。</summary>
+        [ObservableProperty]
+        private string _scanStatusText = "未スキャン";
 
         partial void OnMonitorPathChanged(string value) => SaveSettings();
         partial void OnMoveTargetPathChanged(string value) => SaveSettings();
@@ -152,16 +156,14 @@ namespace AEWatchRenderManager.ViewModels
         [RelayCommand]
         private void SetScanCycle()
         {
-            // シンプルな入力ダイアログがないため、MessageBoxの簡易代用は難しいため
-            // ユーザーに秒数を聞くような何らかのUIが必要だが、一旦現状値をベースにするか
-            // 今回はViewModel側で 3, 10, 30, 60 などのプリセットを切り替える形式も考えられる
-            // ひとまずダイアログを出すのは手間なので、今後の課題とするか、
-            // 文字列入力用の小さなWindowを作るのが正攻法。
-            // ここでは簡易的に「現在の秒数に+10秒(上限120, 最小3)」するトグルにしてみる。
-            int next = ScanIntervalSeconds + 10;
-            if (next > 120) next = 3;
-            ScanIntervalSeconds = next;
-            System.Windows.MessageBox.Show($"スキャン間隔を {ScanIntervalSeconds} 秒に設定しました。", "設定変更");
+            var dialog = new Views.ScanCycleDialog(ScanIntervalSeconds)
+            {
+                Owner = System.Windows.Application.Current.MainWindow
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                ScanIntervalSeconds = dialog.ResultSeconds;
+            }
         }
 
         [RelayCommand]
@@ -186,7 +188,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.12.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。",
+                "AE WatchRender Manager\nVersion 1.15.2\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
@@ -226,6 +228,8 @@ namespace AEWatchRenderManager.ViewModels
                         await StatusAnalyzer.AnalyzeAsync(task);
                     }
                 }
+
+                ScanStatusText = $"最終スキャン: {DateTime.Now:HH:mm:ss}　サイクル: {ScanIntervalSeconds} 秒";
             }
             finally
             {
