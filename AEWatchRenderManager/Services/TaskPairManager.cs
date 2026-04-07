@@ -9,40 +9,43 @@ using System.Threading.Tasks;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Thu Mar 12 10:11:00 JST 2026
-    // Version: 1.5.0
+    // Date: Mon Apr 07 10:00:00 JST 2026
+    // Version: 1.15.3
     public class TaskPairManager
     {
         public ObservableCollection<RenderTaskPair> Tasks { get; } = new();
 
         public async Task SyncWithDirectoriesAsync(string[] subDirs)
         {
-            var currentRcfPaths = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var dir in subDirs)
+            // I/O をバックグラウンドスレッドで実行
+            var currentRcfPaths = await Task.Run(() =>
             {
-                try
+                var paths = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var dir in subDirs)
                 {
-                    // フォルダ内の *_RCF.txt を探す
-                    var rcfFiles = Directory.GetFiles(dir, "*_RCF.txt");
-                    foreach (var rcf in rcfFiles)
+                    try
                     {
-                        currentRcfPaths.Add(rcf);
-                        AddOrUpdateRcfTask(rcf);
+                        foreach (var rcf in Directory.GetFiles(dir, "*_RCF.txt"))
+                            paths.Add(rcf);
                     }
+                    catch (IOException) { }
+                    catch (UnauthorizedAccessException) { }
                 }
-                catch (IOException) { }
-                catch (UnauthorizedAccessException) { }
-            }
+                return paths;
+            });
 
-            // 存在しなくなったタスクのクリーンアップ
-            var toRemove = Tasks.Where(t => !currentRcfPaths.Contains(t.RcfFilePath)).ToList();
-            foreach (var t in toRemove)
+            // UI 操作は Dispatcher 経由で実行
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                Application.Current.Dispatcher.Invoke(() => Tasks.Remove(t));
-            }
+                // 新規タスクの追加
+                foreach (var rcf in currentRcfPaths)
+                    AddOrUpdateRcfTask(rcf);
 
-            await Task.CompletedTask;
+                // 存在しなくなったタスクのクリーンアップ
+                var toRemove = Tasks.Where(t => !currentRcfPaths.Contains(t.RcfFilePath)).ToList();
+                foreach (var t in toRemove)
+                    Tasks.Remove(t);
+            });
         }
 
         private void AddOrUpdateRcfTask(string rcfPath)

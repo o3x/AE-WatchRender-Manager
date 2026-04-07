@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.15.3] - Mon Apr 07 10:00:00 JST 2026
+- `FolderMonitorService.cs` を削除（`DispatcherTimer` によるポーリングに完全移行しており未使用だったデッドコード）
+- `TaskPairManager.SyncWithDirectoriesAsync` の `Directory.GetFiles` を `Task.Run` に移し、フォルダスキャン I/O が UI スレッドをブロックしないよう修正
+- ドロップ時に生成する RCF ファイルのバージョン文字列を `After Effects 13.2v1 Render Control File`（AE CC 2014 固有）から汎用の `After Effects Render Control File` に変更
+- 各ソースファイルのヘッダーバージョンをアプリバージョン（1.15.3）に統一
+
 ## [1.15.2] - Thu Mar 19 19:30:00 JST 2026
 - 「バージョン情報」ダイアログの表示バージョンを最新（1.15.1 → 1.15.2）に修正
 - 同ダイアログに著作権表記（Copyright © 2026 OHYAMA Yoshihsia / Apache License 2.0）を追加
