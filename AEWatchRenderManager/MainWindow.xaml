@@ -99,7 +99,10 @@
                 <ContextMenu>
                     <MenuItem Header="レンダリング情報の表示" Command="{Binding OpenRenderInfoCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <MenuItem Header="AEPファイルの表示" Command="{Binding ShowAepFileCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                    <MenuItem Header="レンダリング先を表示" Command="{Binding ShowRenderDestinationCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <MenuItem Header="レンダリング先を表示"
+                              Command="{Binding ShowRenderDestinationCommand}"
+                              CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                              IsEnabled="{Binding PlacementTarget.SelectedItem.HasOutputPath, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <Separator/>
                     <MenuItem Header="移動先フォルダへ移動" Command="{Binding MoveTaskCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <Separator/>

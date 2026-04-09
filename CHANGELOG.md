@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.16.1] - Thu Apr 09 12:30:00 JST 2026
+- 「レンダリング先を表示」が ProjectFolderPath（プロジェクトフォルダ）を開いていたバグを修正
+  - item*.htm から解析した OutputFolderPath（C:\tmp 等の実際の出力先）を正しく開くよう変更
+- レンダリングが未開始（OutputFolderPath が未確定）の場合、コンテキストメニューの「レンダリング先を表示」をグレーアウト
+  - RenderTaskPair に HasOutputPath プロパティを追加し IsEnabled にバインド
+
 ## [1.16.0] - Thu Apr 09 12:02:00 JST 2026
 - リストのカラムヘッダークリックによるソート機能を追加
   - ステータス・レンダリングアイテム・最終更新・パス の各列でソート可能

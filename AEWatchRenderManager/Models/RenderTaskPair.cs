@@ -38,6 +38,14 @@ namespace AEWatchRenderManager.Models
         [ObservableProperty]
         private string _outputFolderPath = string.Empty;
 
+        /// <summary>レンダリング出力先が判明しているか（コンテキストメニューの IsEnabled バインド用）</summary>
+        public bool HasOutputPath => !string.IsNullOrEmpty(OutputFolderPath);
+
+        partial void OnOutputFolderPathChanged(string value)
+        {
+            OnPropertyChanged(nameof(HasOutputPath));
+        }
+
         [ObservableProperty]
         private string? _htmlLogFilePath;
 

@@ -13,8 +13,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Thu Apr 09 12:02:00 JST 2026
-    // Version: 1.16.0
+    // Date: Thu Apr 09 12:30:00 JST 2026
+    // Version: 1.16.1
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -217,7 +217,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.16.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 1.16.1\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
@@ -459,21 +459,28 @@ namespace AEWatchRenderManager.ViewModels
         {
             if (items == null || items.Count == 0) return;
             var task = items.Cast<RenderTaskPair>().FirstOrDefault();
-            
-            if (task != null && !string.IsNullOrEmpty(task.ProjectFolderPath) && Directory.Exists(task.ProjectFolderPath))
+            if (task == null) return;
+
+            // OutputFolderPath（レンダリング出力先）を優先して開く
+            var targetPath = !string.IsNullOrEmpty(task.OutputFolderPath) && Directory.Exists(task.OutputFolderPath)
+                ? task.OutputFolderPath
+                : null;
+
+            if (targetPath == null)
             {
-                try
-                {
-                    Process.Start(new ProcessStartInfo(task.ProjectFolderPath) { UseShellExecute = true });
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show($"フォルダ展開エラー: {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-                }
+                System.Windows.MessageBox.Show(
+                    "レンダリング先フォルダが見つかりません。\nレンダリングがまだ開始されていない可能性があります。",
+                    "情報", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return;
             }
-            else
+
+            try
             {
-                System.Windows.MessageBox.Show("対象のプロジェクトフォルダが見つかりません。", "情報", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                Process.Start(new ProcessStartInfo(targetPath) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"フォルダ展開エラー: {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
     }
