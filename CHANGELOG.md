@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.15.4] - Mon Apr 07 11:30:00 JST 2026
+- RCF 生成時のバージョン文字列を `After Effects 13.2v1 Render Control File` に戻す（エンバグ修正）
+  - 1行目のバージョン文字列は AE がRCFとして認識するためのマジックナンバーであり、省略・変更すると監視フォルダーが RCF を無視してしまうことが判明
+  - v1.15.3 での「汎用化」変更が誤りだったため差し戻し
+
 ## [1.15.3] - Mon Apr 07 10:00:00 JST 2026
 - `FolderMonitorService.cs` を削除（`DispatcherTimer` によるポーリングに完全移行しており未使用だったデッドコード）
 - `TaskPairManager.SyncWithDirectoriesAsync` の `Directory.GetFiles` を `Task.Run` に移し、フォルダスキャン I/O が UI スレッドをブロックしないよう修正

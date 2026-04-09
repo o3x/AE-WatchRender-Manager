@@ -11,8 +11,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Mon Apr 07 10:00:00 JST 2026
-    // Version: 1.15.3
+    // Date: Mon Apr 07 11:30:00 JST 2026
+    // Version: 1.15.4
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -188,7 +188,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.15.3\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 1.15.4\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
@@ -362,7 +362,12 @@ namespace AEWatchRenderManager.ViewModels
                         
                         var txtContent = $"レポート作成日 : \r\n\t{DateTime.Now:yyyy/MM/dd\tH:mm:ss}\r\n\r\nプロジェクト名 : {Path.GetFileName(file)}\r\n\r\n収集されたソースファイル先 : \r\n\t{targetDir}\r\n\r\n収集されたソースファイル : なし\r\n\r\n収集されたコンポジション :  \r\n\tコンポ 1\r\n\t\r\n収集されたファイルの数 :  0\r\n\r\n収集されたファイルのサイズ :  0 KB\r\n\r\nレンダリングプラグイン:\r\n\tクラシック3D\r\n\t\r\n";
                         File.WriteAllText(txtPath, txtContent);
-                        File.WriteAllText(rcfPath, $"After Effects Render Control File\r\nmax_machines=99\r\nnum_machines=0\r\ninit=0\r\nhtml_init=0\r\nhtml_name=\"{htmlName}\"\r\n");
+                        // @problem: "After Effects Render Control File"（バージョン文字列なし）では
+                        //           AEの監視フォルダーがRCFを正しく認識しない。
+                        // @solution: "After Effects 13.2v1 Render Control File" という固有の
+                        //            バージョン文字列が必須。AEはこの1行目をマジックナンバーとして
+                        //            パースしており、省略・変更するとRCFと認識されない。
+                        File.WriteAllText(rcfPath, $"After Effects 13.2v1 Render Control File\r\nmax_machines=99\r\nnum_machines=0\r\ninit=0\r\nhtml_init=0\r\nhtml_name=\"{htmlName}\"\r\n");
                     }
                 }
                 catch (Exception ex)
