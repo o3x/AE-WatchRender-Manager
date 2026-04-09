@@ -3,16 +3,18 @@ using AEWatchRenderManager.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Data;
 using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Mon Apr 07 11:30:00 JST 2026
-    // Version: 1.15.4
+    // Date: Mon Apr 07 12:00:00 JST 2026
+    // Version: 1.16.0
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -47,6 +49,12 @@ namespace AEWatchRenderManager.ViewModels
 
         public System.Collections.ObjectModel.ObservableCollection<RenderTaskPair> Tasks => _taskManager.Tasks;
 
+        /// <summary>ソート対応ビュー。ListView はこちらにバインドする。</summary>
+        public ICollectionView TasksView { get; }
+
+        private string _currentSortColumn = string.Empty;
+        private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
+
         private readonly TaskPairManager _taskManager;
         private readonly DispatcherTimer _scanTimer;
         private bool _isScanning = false;
@@ -63,6 +71,8 @@ namespace AEWatchRenderManager.ViewModels
 
             _scanTimer = new DispatcherTimer();
             _scanTimer.Tick += async (s, e) => await ScanMonitorFolderAsync();
+
+            TasksView = CollectionViewSource.GetDefaultView(_taskManager.Tasks);
 
             UpdateWindowTitle();
         }
@@ -167,6 +177,25 @@ namespace AEWatchRenderManager.ViewModels
         }
 
         [RelayCommand]
+        private void SortByColumn(string propertyName)
+        {
+            if (_currentSortColumn == propertyName)
+            {
+                _currentSortDirection = _currentSortDirection == ListSortDirection.Ascending
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending;
+            }
+            else
+            {
+                _currentSortColumn = propertyName;
+                _currentSortDirection = ListSortDirection.Ascending;
+            }
+
+            TasksView.SortDescriptions.Clear();
+            TasksView.SortDescriptions.Add(new SortDescription(propertyName, _currentSortDirection));
+        }
+
+        [RelayCommand]
         private void SelectAll()
         {
             foreach (var task in Tasks)
@@ -188,7 +217,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.15.4\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 1.16.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);

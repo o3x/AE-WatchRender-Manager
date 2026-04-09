@@ -83,7 +83,7 @@
             </Grid>
         </Border>
 
-        <ListView Grid.Row="2" ItemsSource="{Binding Tasks}" x:Name="taskListView" SelectionMode="Extended" Margin="10">
+        <ListView Grid.Row="2" ItemsSource="{Binding TasksView}" x:Name="taskListView" SelectionMode="Extended" Margin="10">
             <ListView.InputBindings>
                 <KeyBinding Key="Delete" Command="{Binding DeleteTaskCommand}" CommandParameter="{Binding SelectedItems, ElementName=taskListView}"/>
                 <KeyBinding Key="F5" Command="{Binding ScanNowCommand}"/>
@@ -108,10 +108,18 @@
             </ListView.ContextMenu>
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="ステータス" DisplayMemberBinding="{Binding StatusText}" Width="100"/>
-                    <GridViewColumn Header="レンダリングアイテム" DisplayMemberBinding="{Binding ProjectName}" Width="200"/>
-                    <GridViewColumn Header="最終更新" DisplayMemberBinding="{Binding LastUpdateTime, StringFormat=MM/dd HH:mm:ss}" Width="120"/>
-                    <GridViewColumn Header="パス" DisplayMemberBinding="{Binding ProjectFolderPath}" Width="350"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding StatusText}" Width="100">
+                        <GridViewColumnHeader Content="ステータス" Tag="Status" Click="ColumnHeader_Click"/>
+                    </GridViewColumn>
+                    <GridViewColumn DisplayMemberBinding="{Binding ProjectName}" Width="200">
+                        <GridViewColumnHeader Content="レンダリングアイテム" Tag="ProjectName" Click="ColumnHeader_Click"/>
+                    </GridViewColumn>
+                    <GridViewColumn DisplayMemberBinding="{Binding LastUpdateTime, StringFormat=MM/dd HH:mm:ss}" Width="120">
+                        <GridViewColumnHeader Content="最終更新" Tag="LastUpdateTime" Click="ColumnHeader_Click"/>
+                    </GridViewColumn>
+                    <GridViewColumn DisplayMemberBinding="{Binding ProjectFolderPath}" Width="350">
+                        <GridViewColumnHeader Content="パス" Tag="ProjectFolderPath" Click="ColumnHeader_Click"/>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>

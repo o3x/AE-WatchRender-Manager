@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.16.0] - Mon Apr 07 12:00:00 JST 2026
+- リストのカラムヘッダークリックによるソート機能を追加
+  - ステータス・レンダリングアイテム・最終更新・パス の各列でソート可能
+  - 同一列を再クリックすると昇順/降順が切り替わる
+  - `ICollectionView`（`CollectionViewSource`）を ViewModel に導入し MVVM を維持
+
 ## [1.15.4] - Mon Apr 07 11:30:00 JST 2026
 - RCF 生成時のバージョン文字列を `After Effects 13.2v1 Render Control File` に戻す（エンバグ修正）
   - 1行目のバージョン文字列は AE がRCFとして認識するためのマジックナンバーであり、省略・変更すると監視フォルダーが RCF を無視してしまうことが判明

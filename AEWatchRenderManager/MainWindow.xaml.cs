@@ -14,16 +14,26 @@
 
 using AEWatchRenderManager.ViewModels;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace AEWatchRenderManager
 {
-    // Date: Mon Apr 07 10:00:00 JST 2026
-    // Version: 1.15.3
+    // Date: Mon Apr 07 12:00:00 JST 2026
+    // Version: 1.16.0
     public partial class MainWindow : Window
     {
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void ColumnHeader_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is GridViewColumnHeader header && header.Tag is string propertyName
+                && DataContext is MainViewModel vm)
+            {
+                vm.SortByColumnCommand.Execute(propertyName);
+            }
         }
 
         private void Grid_Drop(object sender, DragEventArgs e)
