@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>..\icon\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <!-- Publish 時のデフォルト設定 (プロファイル未指定時のフォールバック) -->
@@ -17,6 +18,11 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- アプリアイコン（EXE 埋め込み用＆WPF ウィンドウアイコン用） -->
+    <Resource Include="..\icon\app.ico" Link="icon/app.ico"/>
   </ItemGroup>
 
 </Project>

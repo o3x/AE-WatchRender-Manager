@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.16.4] - Thu Apr 09 15:15:00 JST 2026
+- アプリケーションアイコンを設定
+  - `icon/app.ico` を生成し、EXE アイコンおよびウィンドウタイトルバーアイコンに適用
+
 ## [1.16.3] - Thu Apr 09 13:30:00 JST 2026
 - レンダリング完了後も「レンダリング先を表示」がグレーアウトし続ける根本原因を修正
   - .NET 8 では `Encoding.GetEncoding("shift-jis")` がデフォルトで `NotSupportedException` をスロー
