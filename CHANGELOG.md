@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.16.2] - Thu Apr 09 13:00:00 JST 2026
+- レンダリング正常完了後も「レンダリング先を表示」がグレーアウトしたままになるバグを修正
+  - `StatusAnalyzer.AnalyzeAsync` で `(Finished` 検出後に `return` していたため `TryUpdateOutputPathAsync` が呼ばれていなかった
+  - Completed / Failed / Suspended 各ブランチで `OutputFolderPath` が未設定の場合に `TryUpdateOutputPathAsync` を呼ぶよう修正
+
 ## [1.16.1] - Thu Apr 09 12:30:00 JST 2026
 - 「レンダリング先を表示」が ProjectFolderPath（プロジェクトフォルダ）を開いていたバグを修正
   - item*.htm から解析した OutputFolderPath（C:\tmp 等の実際の出力先）を正しく開くよう変更

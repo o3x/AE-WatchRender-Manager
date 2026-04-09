@@ -7,8 +7,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Fri Mar 13 12:05:00 JST 2026
-    // Version: 1.6.0
+    // Date: Thu Apr 09 13:00:00 JST 2026
+    // Version: 1.16.2
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -56,19 +56,28 @@ namespace AEWatchRenderManager.Services
                 }
 
                 // 2. 最確なステータス判定（_RCF.txt の内容を最優先）
+                // @problem: ステータス確定後に early return していたため TryUpdateOutputPathAsync が呼ばれず、
+                //           レンダリング完了後も OutputFolderPath が空のままになり「レンダリング先を表示」がグレーアウトしていた。
+                // @solution: Completed/Failed/Suspended の各ブランチで TryUpdateOutputPathAsync を呼んでから return する。
                 if (rcfContent.Contains("(Finished", StringComparison.OrdinalIgnoreCase))
                 {
                     task.Status = RenderStatus.Completed;
+                    if (string.IsNullOrEmpty(task.OutputFolderPath))
+                        await TryUpdateOutputPathAsync(task);
                     return;
                 }
                 if (rcfContent.Contains("(Error", StringComparison.OrdinalIgnoreCase))
                 {
                     task.Status = RenderStatus.Failed;
+                    if (string.IsNullOrEmpty(task.OutputFolderPath))
+                        await TryUpdateOutputPathAsync(task);
                     return;
                 }
                 if (rcfContent.Contains("(Suspended", StringComparison.OrdinalIgnoreCase))
                 {
                     task.Status = RenderStatus.Suspended;
+                    if (string.IsNullOrEmpty(task.OutputFolderPath))
+                        await TryUpdateOutputPathAsync(task);
                     return;
                 }
                 if (rcfContent.Contains("(Pending", StringComparison.OrdinalIgnoreCase))
