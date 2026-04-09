@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:AEWatchRenderManager"
         xmlns:vm="clr-namespace:AEWatchRenderManager.ViewModels"
         mc:Ignorable="d"
-        Title="{Binding WindowTitle}" Height="600" Width="900" Icon="/icon/app.ico"
+        Title="{Binding WindowTitle}" Height="600" Width="900"
     d:DataContext="{d:DesignInstance vm:MainViewModel}">
     <Window.DataContext>
         <vm:MainViewModel />
