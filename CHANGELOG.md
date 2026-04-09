@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.16.3] - Thu Apr 09 13:30:00 JST 2026
+- レンダリング完了後も「レンダリング先を表示」がグレーアウトし続ける根本原因を修正
+  - .NET 8 では `Encoding.GetEncoding("shift-jis")` がデフォルトで `NotSupportedException` をスロー
+  - `App.OnStartup` で `Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)` を登録し、`item*.htm` の Shift-JIS 解析が正常に動作するよう修正
+
 ## [1.16.2] - Thu Apr 09 13:00:00 JST 2026
 - レンダリング正常完了後も「レンダリング先を表示」がグレーアウトしたままになるバグを修正
   - `StatusAnalyzer.AnalyzeAsync` で `(Finished` 検出後に `return` していたため `TryUpdateOutputPathAsync` が呼ばれていなかった

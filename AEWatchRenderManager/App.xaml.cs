@@ -1,3 +1,4 @@
+using System.Text;
 using System.Threading;
 using System.Windows;
 
@@ -12,6 +13,10 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // @problem: .NET 8 では shift-jis 等の追加エンコーディングがデフォルト無効
+        // @solution: アプリ起動時に一度だけ CodePagesEncodingProvider を登録する
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
         const string mutexName = "AEWatchRenderManager_SingleInstance_Mutex";
         _mutex = new Mutex(true, mutexName, out bool createdNew);
 
