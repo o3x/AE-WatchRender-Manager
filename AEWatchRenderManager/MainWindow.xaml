@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AEWatchRenderManager"
         xmlns:vm="clr-namespace:AEWatchRenderManager.ViewModels"
+        xmlns:models="clr-namespace:AEWatchRenderManager.Models"
         mc:Ignorable="d"
         Title="{Binding WindowTitle}" Height="600" Width="900"
-    d:DataContext="{d:DesignInstance vm:MainViewModel}">
+        d:DataContext="{d:DesignInstance vm:MainViewModel}">
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
@@ -16,9 +17,10 @@
     </Window.InputBindings>
     <Grid AllowDrop="True" Drop="Grid_Drop">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>  <!-- メニューバー -->
+            <RowDefinition Height="Auto"/>  <!-- ボタン帯 -->
+            <RowDefinition Height="*"/>     <!-- リスト -->
+            <RowDefinition Height="Auto"/>  <!-- ステータスバー -->
         </Grid.RowDefinitions>
 
         <!-- メニューバー -->
@@ -39,60 +41,45 @@
             </MenuItem>
         </Menu>
 
-        <!-- 操作パネル -->
-        <Border Grid.Row="1" Background="#F0F0F0" Padding="10" BorderBrush="LightGray" BorderThickness="0,0,0,1">
-            <Grid>
-                <!-- 左側: ボタン群 + 監視状態 -->
-                <StackPanel Orientation="Horizontal">
-                    <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Width="100" Height="30" Margin="0,0,10,0" Background="#E3F2FD"/>
-                    <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Width="100" Height="30" Margin="0,0,10,0"/>
-                    <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="30" FontWeight="Bold"/>
-
-                    <TextBlock VerticalAlignment="Center" Margin="20,0,0,0">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Text" Value="未監視: "/>
-                                <Setter Property="Foreground" Value="Gray"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
-                                        <Setter Property="Text" Value="監視中: "/>
-                                        <Setter Property="Foreground" Value="Black"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <TextBlock Text="{Binding MonitorPath, Mode=OneWay}" VerticalAlignment="Center">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="Gray"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
-                                        <Setter Property="Foreground" Value="Black"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </StackPanel>
-
-                <!-- 右側: スキャン状態（スキャン完了時のみ更新） -->
-                <TextBlock Text="{Binding ScanStatusText}"
-                           HorizontalAlignment="Right" VerticalAlignment="Center"
-                           Foreground="Gray" FontSize="11"/>
-            </Grid>
+        <!-- ボタン帯: ボタンのみ。監視状態・パスはステータスバーへ移動 -->
+        <Border Grid.Row="1" Padding="6,4"
+                BorderBrush="{x:Static SystemColors.ControlDarkBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
+                <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
+                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="28" FontWeight="Bold"/>
+            </StackPanel>
         </Border>
 
-        <ListView Grid.Row="2" ItemsSource="{Binding TasksView}" x:Name="taskListView" SelectionMode="Extended" Margin="10">
+        <!-- タスクリスト -->
+        <ListView Grid.Row="2" ItemsSource="{Binding TasksView}" x:Name="taskListView" SelectionMode="Extended" Margin="10,10,10,4">
             <ListView.InputBindings>
                 <KeyBinding Key="Delete" Command="{Binding DeleteTaskCommand}" CommandParameter="{Binding SelectedItems, ElementName=taskListView}"/>
                 <KeyBinding Key="F5" Command="{Binding ScanNowCommand}"/>
             </ListView.InputBindings>
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
-                    <Setter Property="Foreground" Value="{Binding RowForegroundColor}"/>
+                    <!-- Foreground は未指定（システムカラー継承）。ステータスごとに DataTrigger で上書き -->
                     <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
                     <Setter Property="Tag" Value="{Binding DataContext, ElementName=taskListView}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:RenderStatus.Rendering}">
+                            <Setter Property="Foreground" Value="Green"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:RenderStatus.Completed}">
+                            <Setter Property="Foreground" Value="Blue"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:RenderStatus.Failed}">
+                            <Setter Property="Foreground" Value="Red"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:RenderStatus.Suspended}">
+                            <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:RenderStatus.Pending}">
+                            <Setter Property="Foreground" Value="DarkOrange"/>
+                        </DataTrigger>
+                    </Style.Triggers>
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.ContextMenu>
@@ -143,5 +130,56 @@
                 </GridView>
             </ListView.View>
         </ListView>
+
+        <!-- ステータスバー: 監視状態 / 監視パス / 最終スキャン / サイクル -->
+        <StatusBar Grid.Row="3">
+            <StatusBarItem>
+                <TextBlock>
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="○ 未監視"/>
+                            <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
+                                    <Setter Property="Text" Value="● 監視中"/>
+                                    <Setter Property="Foreground" Value="Green"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock Text="{Binding MonitorPath}" MaxWidth="300"
+                           TextTrimming="CharacterEllipsis" ToolTip="{Binding MonitorPath}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding MonitorPath}" Value="">
+                                    <Setter Property="Text" Value="(未設定)"/>
+                                    <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="最終スキャン: " Foreground="{x:Static SystemColors.GrayTextBrush}"/>
+                    <TextBlock Text="{Binding LastScanText}"/>
+                </StackPanel>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="サイクル: " Foreground="{x:Static SystemColors.GrayTextBrush}"/>
+                    <TextBlock Text="{Binding ScanIntervalSeconds}"/>
+                    <TextBlock Text=" 秒" Foreground="{x:Static SystemColors.GrayTextBrush}"/>
+                </StackPanel>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>

@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.16.9] - Tue Apr 14 12:15:06 JST 2026
+
+- UI をシステム標準に準拠させ、ハードコードカラーを除去
+  - ボタン帯の `Background="#F0F0F0"` / `#E3F2FD` を削除 → システムカラー継承
+  - ボーダー色を `SystemColors.ControlDarkBrush` に変更
+  - リスト行の `Foreground` を文字列バインドから XAML `DataTrigger` に移行。デフォルト（Queued）はシステムカラー継承、Suspended は `SystemColors.GrayTextBrush` を使用
+  - `RenderTaskPair.RowForegroundColor` プロパティを削除
+- ステータスバーを追加（操作パネルから監視情報を分離）
+  - 表示内容: 監視状態（●/○）/ 監視フォルダパス / 最終スキャン時刻 / サイクル秒数
+  - `ScanStatusText` を `LastScanText`（時刻のみ）に整理、サイクルはステータスバーに直接バインド
+  - 監視パス未設定時は「(未設定)」をグレー表示
+
 ## [1.16.8] - Tue Apr 14 12:00:18 JST 2026
 - パス列の表示をレンダリング出力先優先に変更
   - `RenderTaskPair.DisplayPath` を追加: `OutputFolderPath` が判明していればそちらを表示し、未判明時は `ProjectFolderPath` にフォールバック

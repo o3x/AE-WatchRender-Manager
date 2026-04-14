@@ -13,8 +13,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Tue Apr 14 12:00:18 JST 2026
-    // Version: 1.16.8
+    // Date: Tue Apr 14 12:15:06 JST 2026
+    // Version: 1.16.9
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -32,9 +32,9 @@ namespace AEWatchRenderManager.ViewModels
         [ObservableProperty]
         private string _moveTargetPath = string.Empty;
 
-        /// <summary>最終スキャン時刻とサイクル秒数の表示テキスト。スキャン完了時のみ更新。</summary>
+        /// <summary>最終スキャン時刻。スキャン完了時のみ更新。StatusBar に表示する。</summary>
         [ObservableProperty]
-        private string _scanStatusText = "未スキャン";
+        private string _lastScanText = "---";
 
         partial void OnMonitorPathChanged(string value) => SaveSettings();
         partial void OnMoveTargetPathChanged(string value) => SaveSettings();
@@ -217,7 +217,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.16.8\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 1.16.9\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
@@ -258,7 +258,7 @@ namespace AEWatchRenderManager.ViewModels
                     }
                 }
 
-                ScanStatusText = $"最終スキャン: {DateTime.Now:HH:mm:ss}　サイクル: {ScanIntervalSeconds} 秒";
+                LastScanText = DateTime.Now.ToString("HH:mm:ss");
             }
             finally
             {

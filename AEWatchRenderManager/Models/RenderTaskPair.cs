@@ -71,9 +71,6 @@ namespace AEWatchRenderManager.Models
         private string _statusText = "Queued";
 
         [ObservableProperty]
-        private string _rowForegroundColor = "Black";
-
-        [ObservableProperty]
         private DateTime _lastUpdateTime;
 
         // RCFファイルの内容
@@ -129,17 +126,6 @@ namespace AEWatchRenderManager.Models
                 RenderStatus.Suspended => "Suspended",
                 RenderStatus.Pending => "Pending",
                 _ => "Unknown"
-            };
-
-            RowForegroundColor = value switch
-            {
-                RenderStatus.Queued => "Black",
-                RenderStatus.Rendering => "Green",
-                RenderStatus.Completed => "Blue",
-                RenderStatus.Failed => "Red",
-                RenderStatus.Suspended => "Gray",
-                RenderStatus.Pending => "DarkOrange",
-                _ => "Black"
             };
         }
     }
