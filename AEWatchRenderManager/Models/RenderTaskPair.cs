@@ -5,8 +5,8 @@ using System.IO;
 
 namespace AEWatchRenderManager.Models
 {
-    // Date: Tue Apr 14 12:24:34 JST 2026
-    // Version: 1.16.10
+    // Date: Tue Apr 14 12:47:38 JST 2026
+    // Version: 1.16.11
     public enum RenderStatus
     {
         Queued,    // 待機中
@@ -17,8 +17,6 @@ namespace AEWatchRenderManager.Models
         Pending    // 保留中
     }
 
-    // Date: Fri Mar 13 11:55:00 JST 2026
-    // Version: 1.7.0
     public partial class RenderTaskPair : ObservableObject
     {
         [ObservableProperty]

@@ -18,8 +18,8 @@ using System.Windows.Controls;
 
 namespace AEWatchRenderManager
 {
-    // Date: Thu Apr 09 12:02:00 JST 2026
-    // Version: 1.16.0
+    // Date: Tue Apr 14 12:47:38 JST 2026
+    // Version: 1.16.11
     public partial class MainWindow : Window
     {
         public MainWindow()
