@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows;
@@ -11,6 +13,17 @@ public partial class App : Application
 {
     private static Mutex? _mutex;
 
+    // @problem: 二重起動時にアラートを出すだけでは UX が悪い
+    // @solution: Win32 API で既存プロセスのウィンドウをアクティブ化し、
+    //            自身はサイレントに終了する
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    private const int SwRestore = 9;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         // @problem: .NET 8 では shift-jis 等の追加エンコーディングがデフォルト無効
@@ -22,12 +35,31 @@ public partial class App : Application
 
         if (!createdNew)
         {
-            MessageBox.Show("AE WatchRender Manager は既に起動しています。", "二重起動防止", MessageBoxButton.OK, MessageBoxImage.Information);
+            ActivateExistingInstance();
             Application.Current.Shutdown();
             return;
         }
 
         base.OnStartup(e);
+    }
+
+    /// <summary>
+    /// 既に起動しているインスタンスのウィンドウをフォアグラウンドに移す。
+    /// 最小化されている場合は復元してからアクティブ化する。
+    /// </summary>
+    private static void ActivateExistingInstance()
+    {
+        var current = Process.GetCurrentProcess();
+        var existing = Process.GetProcessesByName(current.ProcessName)
+            .FirstOrDefault(p => p.Id != current.Id);
+
+        if (existing == null) return;
+
+        IntPtr hWnd = existing.MainWindowHandle;
+        if (hWnd == IntPtr.Zero) return;
+
+        ShowWindow(hWnd, SwRestore);
+        SetForegroundWindow(hWnd);
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -40,4 +72,3 @@ public partial class App : Application
         base.OnExit(e);
     }
 }
-

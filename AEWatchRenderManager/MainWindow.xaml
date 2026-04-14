@@ -120,8 +120,25 @@
                     <GridViewColumn DisplayMemberBinding="{Binding LastUpdateTime, StringFormat=MM/dd HH:mm:ss}" Width="120">
                         <GridViewColumnHeader Content="最終更新" Tag="LastUpdateTime" Click="ColumnHeader_Click"/>
                     </GridViewColumn>
-                    <GridViewColumn DisplayMemberBinding="{Binding ProjectFolderPath}" Width="350">
-                        <GridViewColumnHeader Content="パス" Tag="ProjectFolderPath" Click="ColumnHeader_Click"/>
+                    <GridViewColumn Width="350">
+                        <GridViewColumnHeader Content="パス" Tag="DisplayPath" Click="ColumnHeader_Click"/>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayPath}" ToolTip="{Binding DisplayPathTooltip}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <!-- 出力先未確定時: 斜体 + 半透明でフォールバック表示であることを示す -->
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasOutputPath}" Value="False">
+                                                    <Setter Property="FontStyle" Value="Italic"/>
+                                                    <Setter Property="Opacity" Value="0.55"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                 </GridView>
             </ListView.View>

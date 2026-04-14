@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.16.8] - Tue Apr 14 12:00:18 JST 2026
+- パス列の表示をレンダリング出力先優先に変更
+  - `RenderTaskPair.DisplayPath` を追加: `OutputFolderPath` が判明していればそちらを表示し、未判明時は `ProjectFolderPath` にフォールバック
+  - `OutputFolderPath` 更新時に `DisplayPath` の変更通知も発火するよう `OnOutputFolderPathChanged` を修正
+- パス列に種別表示を追加
+  - 出力先未確定（フォールバック表示）時は斜体 + 半透明で視覚的に区別
+  - ツールチップに「レンダリング出力先」または「プロジェクトフォルダ（出力先未確定）」とパスを表示
+  - `RenderTaskPair.DisplayPathTooltip` プロパティを追加
+
+## [1.16.7] - Tue Apr 14 12:00:18 JST 2026
+- 二重起動時の挙動を改善: アラート表示 → 既存ウィンドウをフォアグラウンドにアクティブ化
+  - Win32 API `ShowWindow(SW_RESTORE)` + `SetForegroundWindow` で最小化されていても復元して前面に移す
+
 ## [1.16.6] - Thu Apr 09 16:00:00 JST 2026
 - アイコン画像（PNG）更新に伴い ICO を再生成
 

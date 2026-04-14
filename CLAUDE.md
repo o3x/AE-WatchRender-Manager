@@ -103,4 +103,8 @@ AEの非公開仕様やWPF特有の問題に対処した箇所には必ず記述
 1. `CHANGELOG.md` を日本語で更新
 2. ソース先頭の日付・バージョンを更新
 3. 日時形式: `Wed Dec 03 11:05:00 JST 2025`（曜日 月 日 時:分:秒 JST 年）
+   - 日時は必ず以下のコマンドで取得すること（ロケールを英語に固定しないと曜日・月名が日本語になるため）
+   ```powershell
+   powershell -Command "[System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::InvariantCulture; Get-Date -Format 'ddd MMM dd HH:mm:ss JST yyyy'"
+   ```
 4. バージョンは変更規模に応じてリビジョン/マイナー/メジャーを適切にアップ

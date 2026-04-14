@@ -41,9 +41,24 @@ namespace AEWatchRenderManager.Models
         /// <summary>レンダリング出力先が判明しているか（コンテキストメニューの IsEnabled バインド用）</summary>
         public bool HasOutputPath => !string.IsNullOrEmpty(OutputFolderPath);
 
+        /// <summary>
+        /// パス列の表示値。
+        /// レンダリング出力先が判明している場合はそちらを優先し、未判明時はプロジェクトフォルダにフォールバックする。
+        /// </summary>
+        public string DisplayPath => string.IsNullOrEmpty(OutputFolderPath)
+            ? ProjectFolderPath
+            : OutputFolderPath;
+
+        /// <summary>パス列のツールチップ。表示中のパスが何を指すかを示す。</summary>
+        public string DisplayPathTooltip => HasOutputPath
+            ? $"レンダリング出力先:\n{OutputFolderPath}"
+            : $"プロジェクトフォルダ（出力先未確定）:\n{ProjectFolderPath}";
+
         partial void OnOutputFolderPathChanged(string value)
         {
             OnPropertyChanged(nameof(HasOutputPath));
+            OnPropertyChanged(nameof(DisplayPath));
+            OnPropertyChanged(nameof(DisplayPathTooltip));
         }
 
         [ObservableProperty]
