@@ -14,7 +14,7 @@ using System.Windows.Threading;
 namespace AEWatchRenderManager.ViewModels
 {
     // Date: Tue Apr 14 12:24:34 JST 2026
-    // Version: 1.16.10
+    // Version: 1.16.11
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -35,6 +35,12 @@ namespace AEWatchRenderManager.ViewModels
         /// <summary>最終スキャン時刻。スキャン完了時のみ更新。StatusBar に表示する。</summary>
         [ObservableProperty]
         private string _lastScanText = "---";
+
+        partial void OnIsMonitoringChanged(bool value)
+        {
+            StartMonitoringCommand.NotifyCanExecuteChanged();
+            StopMonitoringCommand.NotifyCanExecuteChanged();
+        }
 
         partial void OnMonitorPathChanged(string value) => SaveSettings();
         partial void OnMoveTargetPathChanged(string value) => SaveSettings();
@@ -99,7 +105,9 @@ namespace AEWatchRenderManager.ViewModels
             }
         }
 
-        [RelayCommand]
+        private bool CanStartMonitoring() => !IsMonitoring;
+
+        [RelayCommand(CanExecute = nameof(CanStartMonitoring))]
         private void StartMonitoring()
         {
             if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath))
@@ -135,7 +143,9 @@ namespace AEWatchRenderManager.ViewModels
             }
         }
 
-        [RelayCommand]
+        private bool CanStopMonitoring() => IsMonitoring;
+
+        [RelayCommand(CanExecute = nameof(CanStopMonitoring))]
         private void StopMonitoring()
         {
             _scanTimer.Stop();

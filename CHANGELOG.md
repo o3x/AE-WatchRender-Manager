@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.11] - Tue Apr 14 12:24:34 JST 2026
+
+- 監視開始・監視停止ボタンのボタン状態を監視状態に連動させる
+  - 監視中は「監視開始」ボタンを無効化（`CanStartMonitoring = !IsMonitoring`）
+  - 未監視時は「監視停止」ボタンを無効化（`CanStopMonitoring = IsMonitoring`）
+  - `OnIsMonitoringChanged` で両コマンドの `NotifyCanExecuteChanged` を呼び出し即時反映
+
 ## [1.16.10] - Tue Apr 14 12:24:34 JST 2026
 
 - セキュリティ強化・コード品質改善（レビュー指摘対応）
