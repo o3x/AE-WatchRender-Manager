@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 
@@ -29,7 +30,9 @@ namespace AEWatchRenderManager.Services
                     return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
                 }
             }
-            catch { }
+            catch (JsonException ex) { Debug.WriteLine($"[SettingsService.Load] JSON解析エラー: {ex.Message}"); }
+            catch (IOException ex) { Debug.WriteLine($"[SettingsService.Load] IO例外: {ex.Message}"); }
+            catch (UnauthorizedAccessException ex) { Debug.WriteLine($"[SettingsService.Load] アクセス拒否: {ex.Message}"); }
             return new AppSettings();
         }
 
@@ -45,7 +48,8 @@ namespace AEWatchRenderManager.Services
                 var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(ConfigFile, json);
             }
-            catch { }
+            catch (IOException ex) { Debug.WriteLine($"[SettingsService.Save] IO例外: {ex.Message}"); }
+            catch (UnauthorizedAccessException ex) { Debug.WriteLine($"[SettingsService.Save] アクセス拒否: {ex.Message}"); }
         }
     }
 }

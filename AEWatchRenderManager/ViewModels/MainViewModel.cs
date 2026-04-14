@@ -13,8 +13,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Tue Apr 14 12:15:06 JST 2026
-    // Version: 1.16.9
+    // Date: Tue Apr 14 12:24:34 JST 2026
+    // Version: 1.16.10
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -127,7 +127,11 @@ namespace AEWatchRenderManager.ViewModels
                 UpdateWindowTitle();
                 
                 // 初回スキャンを即座に実行
-                _ = ScanMonitorFolderAsync();
+                // @problem: fire-and-forget の例外は握り潰されて診断不能になる
+                // @solution: ContinueWith(OnlyOnFaulted) でデバッグログに残す
+                _ = ScanMonitorFolderAsync().ContinueWith(
+                    t => Debug.WriteLine($"[ScanMonitorFolder] 非同期例外: {t.Exception}"),
+                    System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted);
             }
         }
 
@@ -217,7 +221,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.16.9\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 1.16.10\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
@@ -340,8 +344,17 @@ namespace AEWatchRenderManager.ViewModels
                 try
                 {
                     var folderName = Path.GetFileName(task.ProjectFolderPath);
-                    var targetPath = Path.Combine(MoveTargetPath, folderName);
-                    
+                    // @problem: folderName に "../" 等が含まれると MoveTargetPath の外へ脱出できる（パストラバーサル）
+                    // @solution: Path.GetFullPath で正規化してから StartsWith でベースパス内に収まるか検証する
+                    var targetPath = Path.GetFullPath(Path.Combine(MoveTargetPath, folderName));
+                    var targetBase = Path.GetFullPath(MoveTargetPath);
+                    if (!targetPath.StartsWith(targetBase + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(targetPath, targetBase, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Debug.WriteLine($"[MoveTask] パストラバーサルを検出したためスキップ: {targetPath}");
+                        continue;
+                    }
+
                     if (Directory.Exists(task.ProjectFolderPath))
                     {
                         Directory.Move(task.ProjectFolderPath, targetPath);

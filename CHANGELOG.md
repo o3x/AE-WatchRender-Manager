@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.16.10] - Tue Apr 14 12:24:34 JST 2026
+
+- セキュリティ強化・コード品質改善（レビュー指摘対応）
+  - **S2** `MoveTask` にパストラバーサル検証を追加。`Path.GetFullPath` + `StartsWith(base + DirectorySeparatorChar)` で `MoveTargetPath` 外へのディレクトリ移動を拒否
+  - **S3** `StatusAnalyzer.TryUpdateOutputPathAsync` で HTML から抽出したパスに `Path.IsPathFullyQualified` + `Directory.Exists` 検証を追加。相対パスや存在しないディレクトリを拒否
+  - **Q1** `catch {}` をすべて `catch (IOException)` / `catch (UnauthorizedAccessException)` / `catch (JsonException)` に限定し、`Debug.WriteLine` で診断ログを出力するよう統一（`StatusAnalyzer`, `SettingsService`, `RenderTaskPair`）
+  - **Q2** fire-and-forget `_ = ScanMonitorFolderAsync()` に `.ContinueWith(OnlyOnFaulted)` ハンドラーを追加し、未捕捉例外をデバッグログに記録
+
 ## [1.16.9] - Tue Apr 14 12:15:06 JST 2026
 
 - UI をシステム標準に準拠させ、ハードコードカラーを除去

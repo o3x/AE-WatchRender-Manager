@@ -1,5 +1,6 @@
 using AEWatchRenderManager.Models;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -7,8 +8,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Thu Apr 09 13:00:00 JST 2026
-    // Version: 1.16.2
+    // Date: Tue Apr 14 12:24:34 JST 2026
+    // Version: 1.16.10
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -142,12 +143,14 @@ namespace AEWatchRenderManager.Services
                 // 出力先パスの特定試行（完了時またはログがある場合）
                 await TryUpdateOutputPathAsync(task);
             }
-            catch (IOException)
+            catch (IOException ex)
             {
+                Debug.WriteLine($"[StatusAnalyzer] IO例外（レンダリング中と判定）: {ex.Message}");
                 task.Status = RenderStatus.Rendering;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[StatusAnalyzer] 予期しない例外: {ex}");
                 task.Status = RenderStatus.Failed;
             }
         }
@@ -164,7 +167,8 @@ namespace AEWatchRenderManager.Services
                 var anyTxt = Directory.GetFiles(dir, "*.txt").Where(f => !f.EndsWith("_RCF.txt", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                 if (anyTxt != null) return anyTxt;
             }
-            catch { }
+            catch (IOException ex) { Debug.WriteLine($"[FindReportFile] IO例外: {ex.Message}"); }
+            catch (UnauthorizedAccessException ex) { Debug.WriteLine($"[FindReportFile] アクセス拒否: {ex.Message}"); }
             return null;
         }
 
@@ -189,7 +193,8 @@ namespace AEWatchRenderManager.Services
                     }
                 }
             }
-            catch { }
+            catch (IOException ex) { Debug.WriteLine($"[ParseReportFile] IO例外: {ex.Message}"); }
+            catch (Exception ex) { Debug.WriteLine($"[ParseReportFile] 予期しない例外: {ex}"); }
         }
 
         private static async Task TryUpdateOutputPathAsync(RenderTaskPair task)
@@ -219,17 +224,30 @@ namespace AEWatchRenderManager.Services
                         if (match.Success)
                         {
                             var fullPath = match.Groups[1].Value.Trim();
-                            var outDir = Path.GetDirectoryName(fullPath);
-                            if (!string.IsNullOrEmpty(outDir))
+                            // @problem: HTML から抽出したパスが相対パスや不正な値の場合、
+                            //           意図しないディレクトリを OutputFolderPath に設定してしまう。
+                            // @solution: IsPathFullyQualified で絶対パスのみ受け入れ、
+                            //            さらに出力ディレクトリが実在するか確認する。
+                            if (!Path.IsPathFullyQualified(fullPath))
                             {
-                                Application.Current.Dispatcher.Invoke(() => task.OutputFolderPath = outDir);
-                                return; // ひとつ見つかれば終了
+                                Debug.WriteLine($"[TryUpdateOutputPath] 相対パスを拒否: {fullPath}");
+                                continue;
                             }
+                            var outDir = Path.GetDirectoryName(fullPath);
+                            if (string.IsNullOrEmpty(outDir) || !Directory.Exists(outDir))
+                            {
+                                Debug.WriteLine($"[TryUpdateOutputPath] 出力ディレクトリが存在しないためスキップ: {outDir}");
+                                continue;
+                            }
+                            Application.Current.Dispatcher.Invoke(() => task.OutputFolderPath = outDir);
+                            return; // ひとつ見つかれば終了
                         }
                     }
                 }
             }
-            catch { }
+            catch (IOException ex) { Debug.WriteLine($"[TryUpdateOutputPath] IO例外: {ex.Message}"); }
+            catch (UnauthorizedAccessException ex) { Debug.WriteLine($"[TryUpdateOutputPath] アクセス拒否: {ex.Message}"); }
+            catch (Exception ex) { Debug.WriteLine($"[TryUpdateOutputPath] 予期しない例外: {ex}"); }
         }
     }
 }

@@ -1,11 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace AEWatchRenderManager.Models
 {
-    // Date: Thu Mar 12 10:10:00 JST 2026
-    // Version: 1.5.0
+    // Date: Tue Apr 14 12:24:34 JST 2026
+    // Version: 1.16.10
     public enum RenderStatus
     {
         Queued,    // 待機中
@@ -106,8 +107,14 @@ namespace AEWatchRenderManager.Models
                     var aepFiles = Directory.GetFiles(ProjectFolderPath, "*.aep");
                     AepFilePath = aepFiles.FirstOrDefault() ?? exactAep;
                 }
-                catch
+                catch (IOException ex)
                 {
+                    Debug.WriteLine($"[RenderTaskPair] AEP検索IO例外: {ex.Message}");
+                    AepFilePath = exactAep;
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Debug.WriteLine($"[RenderTaskPair] AEP検索アクセス拒否: {ex.Message}");
                     AepFilePath = exactAep;
                 }
             }

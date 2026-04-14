@@ -50,8 +50,27 @@ public partial class App : Application
     private static void ActivateExistingInstance()
     {
         var current = Process.GetCurrentProcess();
+
+        // @problem: プロセス名だけで照合すると、同名の別プログラムに
+        //           ウィンドウを乗っ取られる恐れがある（スプーフィング）。
+        // @solution: 実行ファイルのフルパスが一致するプロセスのみ対象にする。
+        //            MainModule アクセスは権限不足で失敗することがあるため try-catch で保護。
+        string? currentPath = null;
+        try { currentPath = current.MainModule?.FileName; }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"MainModule access failed: {ex.Message}"); }
+
         var existing = Process.GetProcessesByName(current.ProcessName)
-            .FirstOrDefault(p => p.Id != current.Id);
+            .FirstOrDefault(p =>
+            {
+                if (p.Id == current.Id) return false;
+                if (currentPath == null) return true; // パス取得不可の場合は名前一致で代用
+                try
+                {
+                    return string.Equals(p.MainModule?.FileName, currentPath,
+                        StringComparison.OrdinalIgnoreCase);
+                }
+                catch { return false; }
+            });
 
         if (existing == null) return;
 
