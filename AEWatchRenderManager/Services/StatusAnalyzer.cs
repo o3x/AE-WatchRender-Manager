@@ -8,8 +8,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Wed Apr 15 11:02:12 JST 2026
-    // Version: 1.16.12
+    // Date: Wed Apr 15 11:17:09 JST 2026
+    // Version: 1.16.13
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -124,8 +124,9 @@ namespace AEWatchRenderManager.Services
 
                 if (logContent.Contains("Finished rendering", StringComparison.OrdinalIgnoreCase) ||
                     logContent.Contains("終了しました", StringComparison.OrdinalIgnoreCase) ||
-                    logContent.Contains("Rendering completed", StringComparison.OrdinalIgnoreCase) || 
-                    logContent.Contains("収集されたファイルの数 :", StringComparison.OrdinalIgnoreCase)) // 収集完了等も完了とするか要検討
+                    logContent.Contains("Rendering completed", StringComparison.OrdinalIgnoreCase) ||
+                    logContent.Contains("レンダリングが完了しました", StringComparison.OrdinalIgnoreCase) ||
+                    logContent.Contains("収集されたファイルの数 :", StringComparison.OrdinalIgnoreCase))
                 {
                     task.Status = RenderStatus.Completed;
                 }
@@ -219,53 +220,32 @@ namespace AEWatchRenderManager.Services
                         using var sr = new StreamReader(fs, System.Text.Encoding.GetEncoding("shift-jis"));
                         var content = await sr.ReadToEndAsync();
 
-                        // @problem: AE が生成する item*.htm の出力パスは
-                        //           <A> タグ内のベースパスと </A> 後のサブパス（フォルダ\ファイル名）に
-                        //           分割して記述されている。
-                        //           旧実装の <LI> 直後パス抽出では両者を結合できず取得失敗していた。
-                        // @solution: <A>内ベースパス と </A>後サブパスを別々に抽出し Path.Combine で結合。
-                        //            サブパスの GetDirectoryName でファイル名を除去して出力フォルダを得る。
-                        //
-                        // フォーマット例:
+                        // AE が生成する item*.htm の出力パスフォーマット:
                         //   <LI>
-                        //   <A TARGET="_THE_ITEM" HREF="...">
-                        //   D:\_render\abc
-                        //   </A>
-                        //   def\def_[####].[fileExtension]
+                        //   C:\tmp\コンポ 1\コンポ 1_[####].[fileExtension]
                         //
-                        // 出力フォルダ = D:\_render\abc\def
-                        var aMatch = Regex.Match(content,
-                            @"<A\b[^>]*>\s*([A-Za-z]:\\[^\r\n<]+?)\s*</A>\s*([^\r\n<]*)",
+                        // <LI> の直後（改行を挟む）にフルパスが1行で記述される。
+                        // Path.GetDirectoryName でファイル名部分を除去して出力フォルダを得る。
+                        // 例: C:\tmp\コンポ 1\コンポ 1_[####].[fileExtension]
+                        //   → C:\tmp\コンポ 1
+                        var liMatch = Regex.Match(content,
+                            @"<LI>\s*([A-Za-z]:\\[^\r\n<]+)",
                             RegexOptions.IgnoreCase);
-                        if (aMatch.Success)
+                        if (liMatch.Success)
                         {
-                            var basePath  = aMatch.Groups[1].Value.Trim();
-                            var subRaw    = aMatch.Groups[2].Value.Trim(); // "def\def_[####].[ext]" 等
-
-                            string outputDir;
-                            if (!string.IsNullOrEmpty(subRaw))
+                            var fullPath = liMatch.Groups[1].Value.Trim();
+                            if (!Path.IsPathFullyQualified(fullPath))
                             {
-                                var subDir = Path.GetDirectoryName(subRaw); // "def" または ""
-                                outputDir = string.IsNullOrEmpty(subDir)
-                                    ? basePath
-                                    : Path.Combine(basePath, subDir);
-                            }
-                            else
-                            {
-                                outputDir = basePath;
-                            }
-
-                            if (!Path.IsPathFullyQualified(outputDir))
-                            {
-                                Debug.WriteLine($"[TryUpdateOutputPath] 相対パスを拒否: {outputDir}");
+                                Debug.WriteLine($"[TryUpdateOutputPath] 相対パスを拒否: {fullPath}");
                                 continue;
                             }
-                            if (!Directory.Exists(outputDir))
+                            var outDir = Path.GetDirectoryName(fullPath);
+                            if (string.IsNullOrEmpty(outDir) || !Directory.Exists(outDir))
                             {
-                                Debug.WriteLine($"[TryUpdateOutputPath] 出力ディレクトリが存在しないためスキップ: {outputDir}");
+                                Debug.WriteLine($"[TryUpdateOutputPath] 出力ディレクトリが存在しないためスキップ: {outDir}");
                                 continue;
                             }
-                            Application.Current.Dispatcher.Invoke(() => task.OutputFolderPath = outputDir);
+                            Application.Current.Dispatcher.Invoke(() => task.OutputFolderPath = outDir);
                             return; // ひとつ見つかれば終了
                         }
                     }

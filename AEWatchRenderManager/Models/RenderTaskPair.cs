@@ -5,8 +5,8 @@ using System.IO;
 
 namespace AEWatchRenderManager.Models
 {
-    // Date: Wed Apr 15 11:02:12 JST 2026
-    // Version: 1.16.12
+    // Date: Wed Apr 15 11:17:09 JST 2026
+    // Version: 1.16.13
     public enum RenderStatus
     {
         Queued,    // 待機中

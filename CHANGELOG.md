@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.16.13] - Wed Apr 15 11:17:09 JST 2026
+
+- `StatusAnalyzer.TryUpdateOutputPathAsync` のパス抽出を実際の HTML フォーマットに合わせて再修正
+  - v1.16.12 で適用した `<A>` タグ方式は誤サンプルに基づくものだったため廃止
+  - 実フォーマット: `<LI>` の直後（改行区切り）にフルパスが1行で記述される
+    ```
+    <LI>
+    C:\tmp\コンポ 1\コンポ 1_[####].[fileExtension]
+    ```
+  - `Path.GetDirectoryName` でファイル名を除去し出力フォルダを確定（例: `C:\tmp\コンポ 1`）
+- ログ内容からの完了判定文字列に `レンダリングが完了しました` を追加（`item*.htm` の実文言に対応）
+
 ## [1.16.12] - Wed Apr 15 11:02:12 JST 2026
 
 - `StatusAnalyzer.TryUpdateOutputPathAsync` のパス抽出ロジックを実際の HTML フォーマットに合わせて修正
