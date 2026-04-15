@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.12] - Wed Apr 15 11:02:12 JST 2026
+
+- `StatusAnalyzer.TryUpdateOutputPathAsync` のパス抽出ロジックを実際の HTML フォーマットに合わせて修正
+  - 旧実装: `<LI>` 直後にパスが記述されている前提の正規表現 → 実際には該当箇所なし
+  - 新実装: `<A>` タグ内のベースパス（例: `D:\_render\abc`）と `</A>` 後のサブパス（例: `def\def_[####].[ext]`）を分離して抽出し `Path.Combine` で結合
+  - `Path.GetDirectoryName(subPath)` でファイル名を除去し出力フォルダを確定（例: `D:\_render\abc\def`）
+
 ## [1.16.11] - Tue Apr 14 12:24:34 JST 2026
 
 - 監視開始・監視停止ボタンのボタン状態を監視状態に連動させる

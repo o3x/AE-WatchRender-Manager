@@ -8,8 +8,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Tue Apr 14 12:24:34 JST 2026
-    // Version: 1.16.10
+    // Date: Wed Apr 15 11:02:12 JST 2026
+    // Version: 1.16.12
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -219,27 +219,53 @@ namespace AEWatchRenderManager.Services
                         using var sr = new StreamReader(fs, System.Text.Encoding.GetEncoding("shift-jis"));
                         var content = await sr.ReadToEndAsync();
 
-                        // <LI> C:\tmp\コンポ 1.[fileExtension] 形式を抽出
-                        var match = Regex.Match(content, @"<LI>\s*([a-zA-Z]:\\[^<]+)");
-                        if (match.Success)
+                        // @problem: AE が生成する item*.htm の出力パスは
+                        //           <A> タグ内のベースパスと </A> 後のサブパス（フォルダ\ファイル名）に
+                        //           分割して記述されている。
+                        //           旧実装の <LI> 直後パス抽出では両者を結合できず取得失敗していた。
+                        // @solution: <A>内ベースパス と </A>後サブパスを別々に抽出し Path.Combine で結合。
+                        //            サブパスの GetDirectoryName でファイル名を除去して出力フォルダを得る。
+                        //
+                        // フォーマット例:
+                        //   <LI>
+                        //   <A TARGET="_THE_ITEM" HREF="...">
+                        //   D:\_render\abc
+                        //   </A>
+                        //   def\def_[####].[fileExtension]
+                        //
+                        // 出力フォルダ = D:\_render\abc\def
+                        var aMatch = Regex.Match(content,
+                            @"<A\b[^>]*>\s*([A-Za-z]:\\[^\r\n<]+?)\s*</A>\s*([^\r\n<]*)",
+                            RegexOptions.IgnoreCase);
+                        if (aMatch.Success)
                         {
-                            var fullPath = match.Groups[1].Value.Trim();
-                            // @problem: HTML から抽出したパスが相対パスや不正な値の場合、
-                            //           意図しないディレクトリを OutputFolderPath に設定してしまう。
-                            // @solution: IsPathFullyQualified で絶対パスのみ受け入れ、
-                            //            さらに出力ディレクトリが実在するか確認する。
-                            if (!Path.IsPathFullyQualified(fullPath))
+                            var basePath  = aMatch.Groups[1].Value.Trim();
+                            var subRaw    = aMatch.Groups[2].Value.Trim(); // "def\def_[####].[ext]" 等
+
+                            string outputDir;
+                            if (!string.IsNullOrEmpty(subRaw))
                             {
-                                Debug.WriteLine($"[TryUpdateOutputPath] 相対パスを拒否: {fullPath}");
+                                var subDir = Path.GetDirectoryName(subRaw); // "def" または ""
+                                outputDir = string.IsNullOrEmpty(subDir)
+                                    ? basePath
+                                    : Path.Combine(basePath, subDir);
+                            }
+                            else
+                            {
+                                outputDir = basePath;
+                            }
+
+                            if (!Path.IsPathFullyQualified(outputDir))
+                            {
+                                Debug.WriteLine($"[TryUpdateOutputPath] 相対パスを拒否: {outputDir}");
                                 continue;
                             }
-                            var outDir = Path.GetDirectoryName(fullPath);
-                            if (string.IsNullOrEmpty(outDir) || !Directory.Exists(outDir))
+                            if (!Directory.Exists(outputDir))
                             {
-                                Debug.WriteLine($"[TryUpdateOutputPath] 出力ディレクトリが存在しないためスキップ: {outDir}");
+                                Debug.WriteLine($"[TryUpdateOutputPath] 出力ディレクトリが存在しないためスキップ: {outputDir}");
                                 continue;
                             }
-                            Application.Current.Dispatcher.Invoke(() => task.OutputFolderPath = outDir);
+                            Application.Current.Dispatcher.Invoke(() => task.OutputFolderPath = outputDir);
                             return; // ひとつ見つかれば終了
                         }
                     }
