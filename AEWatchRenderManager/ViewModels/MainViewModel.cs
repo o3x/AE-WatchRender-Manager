@@ -13,8 +13,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Wed Apr 15 11:17:09 JST 2026
-    // Version: 1.16.13
+    // Date: Wed Apr 15 11:49:02 JST 2026
+    // Version: 1.16.14
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -231,7 +231,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.16.13\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 1.16.14\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
@@ -474,6 +474,33 @@ namespace AEWatchRenderManager.ViewModels
             else
             {
                 System.Windows.MessageBox.Show("対象のAEPファイルが見つかりません。", "情報", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            }
+        }
+
+        [RelayCommand]
+        private void OpenDisplayPath(RenderTaskPair? task)
+        {
+            if (task == null) return;
+
+            // DisplayPath と同じ優先順位: 出力先フォルダ → プロジェクトフォルダ
+            var path = task.HasOutputPath ? task.OutputFolderPath : task.ProjectFolderPath;
+
+            if (string.IsNullOrEmpty(path) || !Directory.Exists(path))
+            {
+                System.Windows.MessageBox.Show(
+                    "フォルダが見つかりません。",
+                    "情報", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"フォルダを開けませんでした: {ex.Message}", "エラー",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
 

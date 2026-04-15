@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.16.14] - Wed Apr 15 11:49:02 JST 2026
+
+- リスト項目のダブルクリックでパス列に表示されているフォルダを Explorer で開く機能を追加
+  - 出力先フォルダが判明している場合はそちらを、未確定の場合はプロジェクトフォルダを開く（`DisplayPath` と同じ優先順位）
+
 ## [1.16.13] - Wed Apr 15 11:17:09 JST 2026
 
 - `StatusAnalyzer.TryUpdateOutputPathAsync` のパス抽出を実際の HTML フォーマットに合わせて再修正

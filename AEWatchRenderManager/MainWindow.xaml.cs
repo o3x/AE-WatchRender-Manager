@@ -18,8 +18,8 @@ using System.Windows.Controls;
 
 namespace AEWatchRenderManager
 {
-    // Date: Wed Apr 15 11:17:09 JST 2026
-    // Version: 1.16.13
+    // Date: Wed Apr 15 11:49:02 JST 2026
+    // Version: 1.16.14
     public partial class MainWindow : Window
     {
         public MainWindow()
@@ -33,6 +33,14 @@ namespace AEWatchRenderManager
                 && DataContext is MainViewModel vm)
             {
                 vm.SortByColumnCommand.Execute(propertyName);
+            }
+        }
+
+        private void TaskListView_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (DataContext is MainViewModel vm && taskListView.SelectedItem is AEWatchRenderManager.Models.RenderTaskPair task)
+            {
+                vm.OpenDisplayPathCommand.Execute(task);
             }
         }
 

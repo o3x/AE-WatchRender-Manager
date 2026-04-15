@@ -53,7 +53,8 @@
         </Border>
 
         <!-- タスクリスト -->
-        <ListView Grid.Row="2" ItemsSource="{Binding TasksView}" x:Name="taskListView" SelectionMode="Extended" Margin="10,10,10,4">
+        <ListView Grid.Row="2" ItemsSource="{Binding TasksView}" x:Name="taskListView" SelectionMode="Extended" Margin="10,10,10,4"
+                  MouseDoubleClick="TaskListView_MouseDoubleClick">
             <ListView.InputBindings>
                 <KeyBinding Key="Delete" Command="{Binding DeleteTaskCommand}" CommandParameter="{Binding SelectedItems, ElementName=taskListView}"/>
                 <KeyBinding Key="F5" Command="{Binding ScanNowCommand}"/>
