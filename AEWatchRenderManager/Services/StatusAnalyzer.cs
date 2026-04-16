@@ -8,8 +8,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Thu Apr 16 11:32:10 JST 2026
-    // Version: 1.16.15
+    // Date: Thu Apr 16 11:51:21 JST 2026
+    // Version: 1.16.16
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -275,14 +275,16 @@ namespace AEWatchRenderManager.Services
 
                         if (outputDir == null) continue;
 
+                        // @problem: Directory.Exists でパスの実在を確認していたため、
+                        //           ネットワークドライブや別マシンへの出力パス等、
+                        //           現在アクセスできないパスがすべてスキップされていた。
+                        // @solution: OutputFolderPath はあくまで「どこに出力されたか」の記録。
+                        //            絶対パスであることだけ確認し、実在確認は行わない。
+                        //            フォルダを開く操作（OpenDisplayPath/ShowRenderDestination）側で
+                        //            Directory.Exists を確認してユーザーに通知する。
                         if (!Path.IsPathFullyQualified(outputDir))
                         {
                             Debug.WriteLine($"[TryUpdateOutputPath] 相対パスを拒否: {outputDir}");
-                            continue;
-                        }
-                        if (!Directory.Exists(outputDir))
-                        {
-                            Debug.WriteLine($"[TryUpdateOutputPath] 出力ディレクトリが存在しないためスキップ: {outputDir}");
                             continue;
                         }
                         Application.Current.Dispatcher.Invoke(() => task.OutputFolderPath = outputDir);

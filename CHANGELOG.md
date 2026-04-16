@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.16] - Thu Apr 16 11:51:21 JST 2026
+
+- `TryUpdateOutputPathAsync` の `Directory.Exists` チェックを削除
+  - ネットワークドライブ・別マシン・アンマウント済みパス等、現在アクセスできないパスがすべてスキップされていた根本原因を修正
+  - `OutputFolderPath` は「どこに出力されたか」の記録であり、ディレクトリの実在確認は不要
+  - フォルダを実際に開く操作（ダブルクリック・右クリックメニュー）側で `Directory.Exists` を確認し、存在しない場合はユーザーに通知する設計に統一
+
 ## [1.16.15] - Thu Apr 16 11:32:10 JST 2026
 
 - `StatusAnalyzer.TryUpdateOutputPathAsync` で `item*.htm` の2種類のフォーマットに対応
