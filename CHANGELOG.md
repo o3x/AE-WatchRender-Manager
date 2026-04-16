@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.16.15] - Thu Apr 16 11:32:10 JST 2026
+
+- `StatusAnalyzer.TryUpdateOutputPathAsync` で `item*.htm` の2種類のフォーマットに対応
+  - **Format B**（`<A>` タグあり）: `<A>` 内のベースパスと `</A>` 後のサブパスを結合してフォルダを特定
+    ```
+    <A ...>D:\AAA\_render</A>
+    コンポ 1\コンポ 1_[####].[fileextension]
+    → D:\AAA\_render\コンポ 1
+    ```
+  - **Format A**（単純）: `<LI>` 直後の完全パスから `GetDirectoryName` でフォルダを取得（フォールバック）
+    ```
+    <LI>
+    C:\tmp\コンポ 1\コンポ 1_[####].[fileExtension]
+    → C:\tmp\コンポ 1
+    ```
+  - Format B を先に試み、マッチしない場合に Format A へフォールバック
+
 ## [1.16.14] - Wed Apr 15 11:49:02 JST 2026
 
 - リスト項目のダブルクリックでパス列に表示されているフォルダを Explorer で開く機能を追加

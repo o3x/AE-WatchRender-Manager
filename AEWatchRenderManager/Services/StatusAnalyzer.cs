@@ -8,8 +8,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Wed Apr 15 11:17:09 JST 2026
-    // Version: 1.16.13
+    // Date: Thu Apr 16 11:32:10 JST 2026
+    // Version: 1.16.15
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -220,34 +220,73 @@ namespace AEWatchRenderManager.Services
                         using var sr = new StreamReader(fs, System.Text.Encoding.GetEncoding("shift-jis"));
                         var content = await sr.ReadToEndAsync();
 
-                        // AE が生成する item*.htm の出力パスフォーマット:
+                        // AE が生成する item*.htm には2種類のフォーマットがある。
+                        //
+                        // [Format A] <LI> 直後に完全パスが1行
                         //   <LI>
                         //   C:\tmp\コンポ 1\コンポ 1_[####].[fileExtension]
+                        //   → outDir = C:\tmp\コンポ 1
                         //
-                        // <LI> の直後（改行を挟む）にフルパスが1行で記述される。
-                        // Path.GetDirectoryName でファイル名部分を除去して出力フォルダを得る。
-                        // 例: C:\tmp\コンポ 1\コンポ 1_[####].[fileExtension]
-                        //   → C:\tmp\コンポ 1
-                        var liMatch = Regex.Match(content,
-                            @"<LI>\s*([A-Za-z]:\\[^\r\n<]+)",
+                        // [Format B] <A>タグ内にベースパス、</A>後にサブパス＋ファイル名
+                        //   <LI>
+                        //   <A TARGET="_THE_ITEM" HREF="...">
+                        //   D:\AAA\_render
+                        //   </A>
+                        //   コンポ 1\コンポ 1_[####].[fileextension]
+                        //   → outDir = D:\AAA\_render\コンポ 1
+                        //
+                        // Format B を先に試み、マッチしなければ Format A へフォールバックする。
+
+                        string? outputDir = null;
+
+                        // --- Format B ---
+                        var aMatch = Regex.Match(content,
+                            @"<A\b[^>]*>\s*([A-Za-z]:\\[^\r\n<]+?)\s*</A>\s*([^\r\n<]*)",
                             RegexOptions.IgnoreCase);
-                        if (liMatch.Success)
+                        if (aMatch.Success)
                         {
-                            var fullPath = liMatch.Groups[1].Value.Trim();
-                            if (!Path.IsPathFullyQualified(fullPath))
+                            var basePath = aMatch.Groups[1].Value.Trim();
+                            var subRaw   = aMatch.Groups[2].Value.Trim();
+                            if (!string.IsNullOrEmpty(subRaw))
                             {
-                                Debug.WriteLine($"[TryUpdateOutputPath] 相対パスを拒否: {fullPath}");
-                                continue;
+                                var subDir = Path.GetDirectoryName(subRaw);
+                                outputDir = string.IsNullOrEmpty(subDir)
+                                    ? basePath
+                                    : Path.Combine(basePath, subDir);
                             }
-                            var outDir = Path.GetDirectoryName(fullPath);
-                            if (string.IsNullOrEmpty(outDir) || !Directory.Exists(outDir))
+                            else
                             {
-                                Debug.WriteLine($"[TryUpdateOutputPath] 出力ディレクトリが存在しないためスキップ: {outDir}");
-                                continue;
+                                outputDir = basePath;
                             }
-                            Application.Current.Dispatcher.Invoke(() => task.OutputFolderPath = outDir);
-                            return; // ひとつ見つかれば終了
                         }
+
+                        // --- Format A (フォールバック) ---
+                        if (outputDir == null)
+                        {
+                            var liMatch = Regex.Match(content,
+                                @"<LI>\s*([A-Za-z]:\\[^\r\n<]+)",
+                                RegexOptions.IgnoreCase);
+                            if (liMatch.Success)
+                            {
+                                var fullPath = liMatch.Groups[1].Value.Trim();
+                                outputDir = Path.GetDirectoryName(fullPath);
+                            }
+                        }
+
+                        if (outputDir == null) continue;
+
+                        if (!Path.IsPathFullyQualified(outputDir))
+                        {
+                            Debug.WriteLine($"[TryUpdateOutputPath] 相対パスを拒否: {outputDir}");
+                            continue;
+                        }
+                        if (!Directory.Exists(outputDir))
+                        {
+                            Debug.WriteLine($"[TryUpdateOutputPath] 出力ディレクトリが存在しないためスキップ: {outputDir}");
+                            continue;
+                        }
+                        Application.Current.Dispatcher.Invoke(() => task.OutputFolderPath = outputDir);
+                        return; // ひとつ見つかれば終了
                     }
                 }
             }
