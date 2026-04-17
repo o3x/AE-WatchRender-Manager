@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.17] - Sat Apr 18 08:48:08 JST 2026
+
+- `StatusAnalyzer.TryUpdateOutputPathAsync` で `item*.htm` 内の `[compName]` プレースホルダーを実際のコンポジション名に置換する処理を追加
+  - AE の特定バージョンは出力パスの `[compName]` をコンポ名で展開せずそのまま書き出すことがある
+  - `<H3>` タグ内の `「コンポ名」`（日本語 AE）または `"CompName"`（英語 AE）からコンポ名を取得し置換
+  - `ResolveCompName(path, htmlContent)` として実装し、Format A・Format B の両パス抽出箇所で呼び出し
+
 ## [1.16.16] - Thu Apr 16 11:51:21 JST 2026
 
 - `TryUpdateOutputPathAsync` の `Directory.Exists` チェックを削除

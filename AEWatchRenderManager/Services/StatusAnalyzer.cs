@@ -8,8 +8,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Thu Apr 16 11:51:21 JST 2026
-    // Version: 1.16.16
+    // Date: Sat Apr 18 08:45:46 JST 2026
+    // Version: 1.16.17
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -156,6 +156,32 @@ namespace AEWatchRenderManager.Services
             }
         }
 
+        /// <summary>
+        /// パス文字列中の AE 未解決変数 [compName] を実際のコンポジション名に置換する。
+        /// </summary>
+        /// <remarks>
+        /// @problem: AE の特定バージョンは item*.htm の出力パスに [compName] を
+        ///           コンポジション名で置換せず literal のまま書き出すことがある。
+        /// @solution: 同じ item*.htm の &lt;H3&gt; タグに
+        ///            「レンダリングアイテムN, 「{コンポ名}」」の形式でコンポ名が
+        ///            記録されているため、そこから取得して置換する。
+        ///            日本語 AE の「」と英語 AE の "" に両対応する。
+        /// </remarks>
+        private static string ResolveCompName(string path, string htmlContent)
+        {
+            if (!path.Contains("[compName]", StringComparison.OrdinalIgnoreCase))
+                return path;
+
+            // <H3> 内の 「コンポ名」 または "CompName" を抽出
+            var m = Regex.Match(htmlContent, @"[「""]([^」""]{1,256})[」""]");
+            if (!m.Success) return path;
+
+            var compName = m.Groups[1].Value.Trim();
+            if (string.IsNullOrEmpty(compName)) return path;
+
+            return Regex.Replace(path, @"\[compName\]", compName, RegexOptions.IgnoreCase);
+        }
+
         private static string? FindReportFile(string dir, string projectName)
         {
             try
@@ -246,7 +272,7 @@ namespace AEWatchRenderManager.Services
                         if (aMatch.Success)
                         {
                             var basePath = aMatch.Groups[1].Value.Trim();
-                            var subRaw   = aMatch.Groups[2].Value.Trim();
+                            var subRaw   = ResolveCompName(aMatch.Groups[2].Value.Trim(), content);
                             if (!string.IsNullOrEmpty(subRaw))
                             {
                                 var subDir = Path.GetDirectoryName(subRaw);
@@ -268,7 +294,7 @@ namespace AEWatchRenderManager.Services
                                 RegexOptions.IgnoreCase);
                             if (liMatch.Success)
                             {
-                                var fullPath = liMatch.Groups[1].Value.Trim();
+                                var fullPath = ResolveCompName(liMatch.Groups[1].Value.Trim(), content);
                                 outputDir = Path.GetDirectoryName(fullPath);
                             }
                         }
