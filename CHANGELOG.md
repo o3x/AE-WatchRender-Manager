@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.18.0] - Sat Apr 18 13:50:28 JST 2026
+
+- **新機能**: 選択中のアイテムを aerender でレンダリングする機能を追加
+  - 右クリックメニューの最上部に「aerender でレンダリング」を追加
+  - 選択アイテムの AEP ファイルを `aerender.exe -project "path.aep"` で実行（cmd.exe ウィンドウで起動）
+  - 複数選択時はそれぞれ別ウィンドウで起動
+  - aerender.exe を Program Files 内の AE インストールフォルダから自動検出
+  - セットアップメニューに「aerender.exe の場所...」を追加
+  - **注意**: aerender の `-watchfolder` オプションは非対応のため、個別 AEP レンダリング方式を採用
+
 ## [1.17.1] - Sat Apr 18 13:39:29 JST 2026
 
 - `JoinWatchFolder` のバグ修正: `Program Files` 等スペースを含むパスで aerender が起動できなかった問題を修正

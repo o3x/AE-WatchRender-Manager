@@ -13,8 +13,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Sat Apr 18 13:39:29 JST 2026
-    // Version: 1.17.1
+    // Date: Sat Apr 18 13:50:28 JST 2026
+    // Version: 1.18.0
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -249,13 +249,13 @@ namespace AEWatchRenderManager.ViewModels
         }
 
         [RelayCommand]
-        private void JoinWatchFolder()
+        private void RenderWithAerender(System.Collections.IList? items)
         {
-            if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath))
+            if (items == null || items.Count == 0)
             {
                 System.Windows.MessageBox.Show(
-                    "監視フォルダが設定されていません。\n先に監視フォルダを設定してください。",
-                    "操作エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                    "レンダリングするアイテムをリストから選択してください。",
+                    "操作エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
                 return;
             }
 
@@ -263,7 +263,7 @@ namespace AEWatchRenderManager.ViewModels
             if (aerender == null)
             {
                 var result = System.Windows.MessageBox.Show(
-                    "aerender.exe が見つかりませんでした。\n\n手動で場所を指定しますか？\n（インストール先の例: C:\\Program Files\\Adobe\\Adobe After Effects 2024\\Support Files\\aerender.exe）",
+                    "aerender.exe が見つかりませんでした。\n\n手動で場所を指定しますか？\n（例: C:\\Program Files\\Adobe\\Adobe After Effects 2024\\Support Files\\aerender.exe）",
                     "aerender.exe が見つかりません",
                     System.Windows.MessageBoxButton.YesNo,
                     System.Windows.MessageBoxImage.Question);
@@ -272,25 +272,36 @@ namespace AEWatchRenderManager.ViewModels
                 return;
             }
 
-            try
+            var tasks = items.Cast<RenderTaskPair>().ToList();
+            foreach (var task in tasks)
             {
-                // 新しいコンソールウィンドウで aerender を起動する
-                // @problem: スペースを含むパス（Program Files 等）を cmd /K に渡す場合、
-                //           パスを "" で囲むだけでは不十分で cmd がパースに失敗する。
-                // @solution: cmd /K の規則に従い、コマンド全体をさらに "" で囲む。
-                //            /K ""path\aerender.exe" -watchfolder "path""
-                Process.Start(new ProcessStartInfo
+                if (string.IsNullOrEmpty(task.AepFilePath) || !File.Exists(task.AepFilePath))
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"/K \"\"{aerender}\" -watchfolder \"{MonitorPath}\"\"",
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show(
-                    $"aerender の起動に失敗しました:\n{ex.Message}",
-                    "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    System.Windows.MessageBox.Show(
+                        $"AEP ファイルが見つかりません。\n({task.ProjectName})\n{task.AepFilePath}",
+                        "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                    continue;
+                }
+
+                try
+                {
+                    // @problem: スペースを含むパス（Program Files 等）を cmd /K に渡す場合、
+                    //           パスを "" で囲むだけでは不十分で cmd がパースに失敗する。
+                    // @solution: cmd /K の規則に従い、コマンド全体をさらに "" で囲む。
+                    //            /K ""path\aerender.exe" -project "path\file.aep""
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "cmd.exe",
+                        Arguments = $"/K \"\"{aerender}\" -project \"{task.AepFilePath}\"\"",
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show(
+                        $"aerender の起動に失敗しました ({task.ProjectName}):\n{ex.Message}",
+                        "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                }
             }
         }
 
@@ -327,7 +338,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.16.19\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 1.18.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);

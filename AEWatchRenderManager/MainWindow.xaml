@@ -50,10 +50,7 @@
             <StackPanel Orientation="Horizontal">
                 <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
                 <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
-                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="28" FontWeight="Bold" Margin="0,0,16,0"/>
-                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,4,16,4"/>
-                <Button Content="aerender で参加" Command="{Binding JoinWatchFolderCommand}" Width="130" Height="28"
-                        ToolTip="aerender.exe を使ってこの監視フォルダのレンダリングに参加します"/>
+                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="28" FontWeight="Bold"/>
             </StackPanel>
         </Border>
 
@@ -90,6 +87,10 @@
             </ListView.ItemContainerStyle>
             <ListView.ContextMenu>
                 <ContextMenu>
+                    <MenuItem Header="aerender でレンダリング"
+                              Command="{Binding RenderWithAerenderCommand}"
+                              CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <Separator/>
                     <MenuItem Header="レンダリング情報の表示" Command="{Binding OpenRenderInfoCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <MenuItem Header="AEPファイルの表示" Command="{Binding ShowAepFileCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <MenuItem Header="レンダリング先を表示"
