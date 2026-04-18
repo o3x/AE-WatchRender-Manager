@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.21.1] - Sat Apr 18 17:40:06 JST 2026
+
+- 右クリックメニューの「aerender でレンダリング」を最下部に移動
+
 ## [1.21.0] - Sat Apr 18 14:08:25 JST 2026
 
 - **改善**: aerender でレンダリング時に AEP バージョンに対応した aerender.exe を自動選択して起動

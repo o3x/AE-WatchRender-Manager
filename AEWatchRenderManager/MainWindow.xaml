@@ -89,10 +89,6 @@
             </ListView.ItemContainerStyle>
             <ListView.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="aerender でレンダリング"
-                              Command="{Binding RenderWithAerenderCommand}"
-                              CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                    <Separator/>
                     <MenuItem Header="レンダリング情報の表示" Command="{Binding OpenRenderInfoCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <MenuItem Header="AEPファイルの表示" Command="{Binding ShowAepFileCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <MenuItem Header="レンダリング先を表示"
@@ -103,6 +99,10 @@
                     <MenuItem Header="移動先フォルダへ移動" Command="{Binding MoveTaskCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <Separator/>
                     <MenuItem Header="ごみ箱へ削除" Command="{Binding DeleteTaskCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <Separator/>
+                    <MenuItem Header="aerender でレンダリング"
+                              Command="{Binding RenderWithAerenderCommand}"
+                              CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                 </ContextMenu>
             </ListView.ContextMenu>
             <ListView.View>
