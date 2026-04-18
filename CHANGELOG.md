@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.2] - Sat Apr 18 19:06:22 JST 2026
+
+- **修正**: 参加停止時に `cmd.exe` だけでなく aerender 子プロセスも終了させる（`Kill(entireProcessTree: true)`）
+- **修正**: `AerenderPathResolver.ReadAepMajorVersion` を `FileShare.ReadWrite` に変更（AE が AEP を開いている状態でも読み取れるように）
+- **修正**: XAML ボタン帯のセパレータを `ToolBar.SeparatorStyleKey`（ToolBar 外では無効）から `Rectangle` に変更
+- **改善**: `IsQueued` の Regex を `static readonly` + `Compiled` に変更（ループごとのコンパイルを排除）
+- **改善**: aerender パス解決コードの可読性向上（3段階 null 合体を整形）
+- **改善**: `TryClaimAndRenderAsync` でロックファイルパスを `GetLockFilePath` 経由でなく直接組み立て（`GetProjectName` の二重呼び出しを削除）
+
 ## [2.0.1] - Sat Apr 18 19:06:22 JST 2026
 
 - **修正**: 参加モードの aerender を `cmd /C` で実行するように変更

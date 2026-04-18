@@ -1,5 +1,5 @@
 // WatchFolderParticipant.cs
-// Version: 2.0.0
+// Version: 2.0.2
 // Updated: Sat Apr 18 19:06:22 JST 2026
 
 using System;
@@ -25,6 +25,7 @@ namespace AEWatchRenderManager.Services
 
         private CancellationTokenSource? _cts;
         private static readonly string MachineName = Environment.MachineName;
+        private static readonly Regex InitPattern = new(@"init=(\d+)", RegexOptions.Compiled);
 
         // ロックファイルがこの時間より古ければ停止したマシンのロックとみなして無視する
         private const int StaleLockMinutes = 30;
@@ -114,7 +115,7 @@ namespace AEWatchRenderManager.Services
             if (content.Contains("(Pending",   StringComparison.OrdinalIgnoreCase)) return false;
             if (content.Contains("(Rendering", StringComparison.OrdinalIgnoreCase)) return false;
 
-            var initMatch = Regex.Match(content, @"init=(\d+)");
+            var initMatch = InitPattern.Match(content);
             if (initMatch.Success && initMatch.Groups[1].Value == "0") return true;
             if (content.Contains("(Queued", StringComparison.OrdinalIgnoreCase)) return true;
             return false;
@@ -165,7 +166,8 @@ namespace AEWatchRenderManager.Services
         {
             var projectName = GetProjectName(rcfPath);
             var projectDir  = Path.GetDirectoryName(rcfPath)!;
-            var lockFile    = GetLockFilePath(rcfPath);
+            // GetLockFilePath も内部で GetProjectName を呼ぶため、計算済みの名前で直接組み立てる
+            var lockFile    = Path.Combine(projectDir, $"{MachineName}_{projectName}_RCF.lock");
 
             // ロックファイルを作成してクレームを宣言
             try
@@ -202,10 +204,11 @@ namespace AEWatchRenderManager.Services
                     return;
                 }
 
-                // aerender のパス解決（AEP バージョン一致 → ユーザー設定 → 最新の順）
-                var aepMajor    = AerenderPathResolver.ReadAepMajorVersion(aepPath);
-                var aerenderPath = (aepMajor > 0 ? AerenderPathResolver.FindForVersion(aepMajor) : null)
-                    ?? (string.IsNullOrEmpty(userAerenderPath) ? null : (File.Exists(userAerenderPath) ? userAerenderPath : null))
+                // aerender のパス解決（AEP バージョン一致 → ユーザー設定 → 最新インストール済みの順）
+                var aepMajor = AerenderPathResolver.ReadAepMajorVersion(aepPath);
+                var aerenderPath =
+                    (aepMajor > 0 ? AerenderPathResolver.FindForVersion(aepMajor) : null)
+                    ?? (!string.IsNullOrEmpty(userAerenderPath) && File.Exists(userAerenderPath) ? userAerenderPath : null)
                     ?? AerenderPathResolver.FindNewest();
 
                 if (aerenderPath == null)
@@ -275,7 +278,8 @@ namespace AEWatchRenderManager.Services
                 }
                 catch (OperationCanceledException)
                 {
-                    if (!proc.HasExited) try { proc.Kill(); } catch { }
+                    // cmd.exe だけでなく子プロセス（aerender 本体）も含めて終了させる
+                    if (!proc.HasExited) try { proc.Kill(entireProcessTree: true); } catch { }
                     throw;
                 }
                 return proc.ExitCode == 0;

@@ -66,7 +66,8 @@ namespace AEWatchRenderManager.Services
         {
             try
             {
-                using var fs = new FileStream(aepPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                // AE が AEP を開いている状態でも読めるよう FileShare.ReadWrite を使う
+                using var fs = new FileStream(aepPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using var br = new BinaryReader(fs);
                 var b = br.ReadBytes(48);
                 if (b.Length < 48) return 0;

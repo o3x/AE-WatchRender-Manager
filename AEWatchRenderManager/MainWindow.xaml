@@ -52,8 +52,8 @@
             <StackPanel Orientation="Horizontal">
                 <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
                 <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
-                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="28" FontWeight="Bold" Margin="0,0,16,0"/>
-                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,0,16,0"/>
+                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="28" FontWeight="Bold" Margin="0,0,12,0"/>
+                <Rectangle Width="1" Height="20" Fill="{x:Static SystemColors.ControlDarkBrush}" Margin="0,0,12,0"/>
                 <Button Content="参加開始" Command="{Binding StartParticipationCommand}" Width="100" Height="28" Margin="0,0,8,0"
                         ToolTip="監視フォルダ内のキュー済みジョブを aerender で自動レンダリングします"/>
                 <Button Content="参加停止" Command="{Binding StopParticipationCommand}" Width="100" Height="28"/>
