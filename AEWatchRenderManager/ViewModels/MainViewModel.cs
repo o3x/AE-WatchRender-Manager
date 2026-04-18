@@ -9,14 +9,15 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Sat Apr 18 13:55:38 JST 2026
-    // Version: 1.19.0
+    // Date: Sat Apr 18 14:02:10 JST 2026
+    // Version: 1.20.0
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -71,7 +72,7 @@ namespace AEWatchRenderManager.ViewModels
         private string _currentSortColumn = string.Empty;
         private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
 
-        private const string CurrentVersion = "1.19.0";
+        private const string CurrentVersion = "1.20.0";
         private const string GitHubApiLatest = "https://api.github.com/repos/o3x/AE-WatchRender-Manager/releases/latest";
 
         // HttpClient はインスタンスを使い回す（都度 new するとソケット枯渇の原因になる）
@@ -298,6 +299,10 @@ namespace AEWatchRenderManager.ViewModels
             }
 
             var tasks = items.Cast<RenderTaskPair>().ToList();
+
+            // aerender のバージョンを一度だけ取得
+            var aerenderMajor = GetAerenderMajorVersion(aerender);
+
             foreach (var task in tasks)
             {
                 if (string.IsNullOrEmpty(task.AepFilePath) || !File.Exists(task.AepFilePath))
@@ -306,6 +311,21 @@ namespace AEWatchRenderManager.ViewModels
                         $"AEP ファイルが見つかりません。\n({task.ProjectName})\n{task.AepFilePath}",
                         "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
                     continue;
+                }
+
+                // AEP が要求するバージョンと aerender のバージョンを照合
+                var aepMajor = ReadAepMajorVersion(task.AepFilePath);
+                if (aepMajor > 0 && aerenderMajor > 0 && aerenderMajor < aepMajor)
+                {
+                    var warn = System.Windows.MessageBox.Show(
+                        $"バージョンの不一致が検出されました。\n\n" +
+                        $"AEP の作成バージョン : {aepMajor}.x\n" +
+                        $"aerender のバージョン: {aerenderMajor}.x\n\n" +
+                        $"aerender がこの AEP ファイルを開けない可能性があります。\n続行しますか？",
+                        $"バージョン不一致 — {task.ProjectName}",
+                        System.Windows.MessageBoxButton.YesNo,
+                        System.Windows.MessageBoxImage.Warning);
+                    if (warn != System.Windows.MessageBoxResult.Yes) continue;
                 }
 
                 try
@@ -327,6 +347,70 @@ namespace AEWatchRenderManager.ViewModels
                         $"aerender の起動に失敗しました ({task.ProjectName}):\n{ex.Message}",
                         "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
+            }
+        }
+
+        /// <summary>
+        /// aerender.exe を -version フラグで起動してメジャーバージョン番号を取得する。
+        /// 取得失敗時は 0 を返す。
+        /// </summary>
+        private static int GetAerenderMajorVersion(string aerenderPath)
+        {
+            try
+            {
+                using var proc = Process.Start(new ProcessStartInfo
+                {
+                    FileName = aerenderPath,
+                    Arguments = "-version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                })!;
+                var output = proc.StandardOutput.ReadToEnd();
+                proc.WaitForExit(5000);
+
+                // "aerender version 23.6.0" などからメジャー番号を抽出
+                var m = Regex.Match(output, @"aerender version (\d+)\.");
+                if (m.Success && int.TryParse(m.Groups[1].Value, out int ver))
+                    return ver;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[GetAerenderVersion] {ex.Message}");
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// AEP バイナリヘッダーを解析して AE メジャーバージョン番号を返す。
+        /// AEselector プロジェクトの GetAeVersionFromFile と同じロジック。
+        /// 解析失敗時は 0 を返す。
+        /// </summary>
+        private static int ReadAepMajorVersion(string aepPath)
+        {
+            try
+            {
+                using var fs = new FileStream(aepPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var br = new BinaryReader(fs);
+                var b = br.ReadBytes(48);
+                if (b.Length < 48) return 0;
+
+                // マジックナンバー確認: RIFF or RIFX + "Egg!" (offset 8)
+                bool isRiff = b[0] == 0x52 && b[1] == 0x49 && b[2] == 0x46 && b[3] == 0x46;
+                bool isRifx = b[0] == 0x52 && b[1] == 0x49 && b[2] == 0x46 && b[3] == 0x58;
+                bool isEgg  = b[8] == 0x45 && b[9] == 0x67 && b[10] == 0x67 && b[11] == 0x21;
+                if ((!isRiff && !isRifx) || !isEgg) return 0;
+
+                // CS6以降: offset 0x18 == 0x68。バージョンは offset 0x24 から。
+                // CS5以前: バージョンは offset 0x18 から。
+                return b[0x18] == 0x68
+                    ? ((b[0x24] << 1) & 0xF8) | ((b[0x25] >> 3) & 0x07)
+                    : ((b[0x18] << 1) & 0xF8) | ((b[0x19] >> 3) & 0x07);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ReadAepVersion] {ex.Message}");
+                return 0;
             }
         }
 
@@ -422,7 +506,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.19.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 1.20.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
