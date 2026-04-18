@@ -1,0 +1,88 @@
+<Window x:Class="AEWatchRenderManager.Views.SettingsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:AEWatchRenderManager.ViewModels"
+        Title="設定" Width="520" SizeToContent="Height"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Window.Resources>
+        <Style x:Key="LabelStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+        <Style x:Key="InputRowStyle" TargetType="RowDefinition">
+            <Setter Property="Height" Value="30"/>
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="16,12,16,16">
+
+        <!-- 監視 -->
+        <GroupBox Header="監視" Padding="8,6,8,8" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="64"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="監視フォルダ" Style="{StaticResource LabelStyle}"/>
+                <TextBox  Grid.Row="0" Grid.Column="1" Text="{Binding MonitorPath, UpdateSourceTrigger=PropertyChanged}"
+                          VerticalContentAlignment="Center" Margin="0,3,4,3"/>
+                <Button   Grid.Row="0" Grid.Column="2" Content="参照..."
+                          Command="{Binding BrowseMonitorFolderCommand}" Margin="0,3,0,3"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="移動先フォルダ" Style="{StaticResource LabelStyle}"/>
+                <TextBox  Grid.Row="1" Grid.Column="1" Text="{Binding MoveTargetPath, UpdateSourceTrigger=PropertyChanged}"
+                          VerticalContentAlignment="Center" Margin="0,3,4,3"/>
+                <Button   Grid.Row="1" Grid.Column="2" Content="参照..."
+                          Command="{Binding BrowseMoveTargetCommand}" Margin="0,3,0,3"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="スキャン間隔" Style="{StaticResource LabelStyle}"/>
+                <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                            Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBox Text="{Binding ScanIntervalSeconds, UpdateSourceTrigger=LostFocus}"
+                             Width="60" VerticalContentAlignment="Center" Height="22" TextAlignment="Right"/>
+                    <TextBlock Text=" 秒" VerticalAlignment="Center"
+                               Foreground="{x:Static SystemColors.GrayTextBrush}" Margin="4,0,0,0"/>
+                </StackPanel>
+            </Grid>
+        </GroupBox>
+
+        <!-- aerender -->
+        <GroupBox Header="aerender" Padding="8,6,8,8" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap" Margin="0,0,0,8"
+                           Foreground="{x:Static SystemColors.GrayTextBrush}">
+                    AEP のバージョンを自動検出して対応する aerender を起動します。
+                    見つからない場合のフォールバックパス（通常は空欄で自動検出）:
+                </TextBlock>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="64"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding AerenderPath, UpdateSourceTrigger=PropertyChanged}"
+                             VerticalContentAlignment="Center" Height="24" Margin="0,0,4,0"/>
+                    <Button Grid.Column="1" Content="参照..."
+                            Command="{Binding BrowseAerenderExeCommand}" Height="24"/>
+                </Grid>
+                <CheckBox Content="aerender ウィンドウを残す（完了後も出力を確認できます）"
+                          IsChecked="{Binding KeepAerenderWindowOpen}"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- OK / キャンセル -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="キャンセル" Width="80" Margin="0,0,8,0"
+                    Click="CancelButton_Click" IsCancel="True"/>
+            <Button Content="OK" Width="80"
+                    Click="OkButton_Click" IsDefault="True"/>
+        </StackPanel>
+
+    </StackPanel>
+</Window>

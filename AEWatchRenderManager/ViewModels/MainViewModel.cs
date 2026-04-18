@@ -17,7 +17,7 @@ using System.Windows.Threading;
 namespace AEWatchRenderManager.ViewModels
 {
     // Date: Sat Apr 18 19:06:22 JST 2026
-    // Version: 2.0.0
+    // Version: 2.1.0
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -60,14 +60,12 @@ namespace AEWatchRenderManager.ViewModels
 
         partial void OnIsParticipatingChanged(bool value)
         {
-            StartParticipationCommand.NotifyCanExecuteChanged();
-            StopParticipationCommand.NotifyCanExecuteChanged();
+            ToggleParticipationCommand.NotifyCanExecuteChanged();
         }
 
         partial void OnIsMonitoringChanged(bool value)
         {
-            StartMonitoringCommand.NotifyCanExecuteChanged();
-            StopMonitoringCommand.NotifyCanExecuteChanged();
+            ToggleMonitoringCommand.NotifyCanExecuteChanged();
         }
 
         partial void OnMonitorPathChanged(string value) => SaveSettings();
@@ -91,7 +89,7 @@ namespace AEWatchRenderManager.ViewModels
         private string _currentSortColumn = string.Empty;
         private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
 
-        private const string CurrentVersion = "2.0.0";
+        private const string CurrentVersion = "2.1.0";
         private const string GitHubApiLatest = "https://api.github.com/repos/o3x/AE-WatchRender-Manager/releases/latest";
 
         // HttpClient はインスタンスを使い回す（都度 new するとソケット枯渇の原因になる）
@@ -159,52 +157,36 @@ namespace AEWatchRenderManager.ViewModels
             }
         }
 
-        private bool CanStartMonitoring() => !IsMonitoring;
-
-        [RelayCommand(CanExecute = nameof(CanStartMonitoring))]
-        private void StartMonitoring()
+        [RelayCommand]
+        private void ToggleMonitoring()
         {
-            if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath))
+            if (IsMonitoring)
             {
-                var dialog = new Microsoft.Win32.OpenFolderDialog
+                _scanTimer.Stop();
+                IsMonitoring = false;
+                UpdateWindowTitle();
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath))
                 {
-                    Title = "監視するルートフォルダを選択してください"
-                };
-                if (dialog.ShowDialog() == true)
-                {
-                    MonitorPath = dialog.FolderName;
-                }
-                else
-                {
-                    // キャンセルされたら何もしない
+                    System.Windows.MessageBox.Show(
+                        "監視フォルダが設定されていません。\nセットアップ > 設定... から設定してください。",
+                        "監視開始", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
                     return;
                 }
-            }
 
-            if (Directory.Exists(MonitorPath))
-            {
                 _scanTimer.Interval = TimeSpan.FromSeconds(ScanIntervalSeconds <= 0 ? 3 : ScanIntervalSeconds);
                 _scanTimer.Start();
                 IsMonitoring = true;
                 UpdateWindowTitle();
-                
-                // 初回スキャンを即座に実行
+
                 // @problem: fire-and-forget の例外は握り潰されて診断不能になる
                 // @solution: ContinueWith(OnlyOnFaulted) でデバッグログに残す
                 _ = ScanMonitorFolderAsync().ContinueWith(
                     t => Debug.WriteLine($"[ScanMonitorFolder] 非同期例外: {t.Exception}"),
                     System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted);
             }
-        }
-
-        private bool CanStopMonitoring() => IsMonitoring;
-
-        [RelayCommand(CanExecute = nameof(CanStopMonitoring))]
-        private void StopMonitoring()
-        {
-            _scanTimer.Stop();
-            IsMonitoring = false;
-            UpdateWindowTitle();
         }
 
         [RelayCommand]
@@ -219,28 +201,27 @@ namespace AEWatchRenderManager.ViewModels
         }
 
         [RelayCommand]
-        private void BrowseMonitorFolder()
+        private void OpenSettings()
         {
-            var dialog = new Microsoft.Win32.OpenFolderDialog
+            var vm = new SettingsViewModel
             {
-                Title = "監視するルートフォルダを選択してください"
+                MonitorPath = MonitorPath,
+                MoveTargetPath = MoveTargetPath,
+                ScanIntervalSeconds = ScanIntervalSeconds,
+                AerenderPath = AerenderPath,
+                KeepAerenderWindowOpen = KeepAerenderWindowOpen
             };
-            if (dialog.ShowDialog() == true)
-            {
-                MonitorPath = dialog.FolderName;
-            }
-        }
-
-        [RelayCommand]
-        private void SetScanCycle()
-        {
-            var dialog = new Views.ScanCycleDialog(ScanIntervalSeconds)
+            var dialog = new Views.SettingsDialog(vm)
             {
                 Owner = System.Windows.Application.Current.MainWindow
             };
             if (dialog.ShowDialog() == true)
             {
-                ScanIntervalSeconds = dialog.ResultSeconds;
+                MonitorPath = vm.MonitorPath;
+                MoveTargetPath = vm.MoveTargetPath;
+                ScanIntervalSeconds = vm.ScanIntervalSeconds;
+                AerenderPath = vm.AerenderPath;
+                KeepAerenderWindowOpen = vm.KeepAerenderWindowOpen;
             }
         }
 
@@ -281,7 +262,6 @@ namespace AEWatchRenderManager.ViewModels
             }
         }
 
-        [RelayCommand]
         private void BrowseAerenderExe()
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
@@ -384,39 +364,37 @@ namespace AEWatchRenderManager.ViewModels
         // 監視フォルダ参加コマンド (v2.0)
         // ─────────────────────────────────────────────────────────
 
-        private bool CanStartParticipation() => !IsParticipating;
-        private bool CanStopParticipation()  => IsParticipating;
-
-        [RelayCommand(CanExecute = nameof(CanStartParticipation))]
-        private void StartParticipation()
+        [RelayCommand]
+        private void ToggleParticipation()
         {
-            if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath))
+            if (IsParticipating)
             {
-                System.Windows.MessageBox.Show(
-                    "監視フォルダが設定されていません。先に「監視開始」または「監視フォルダの設定」を行ってください。",
-                    "参加エラー",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information);
-                return;
+                _participant.Stop();
+                _participant.StatusChanged -= OnParticipationStatusChanged;
+                IsParticipating = false;
             }
+            else
+            {
+                if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath))
+                {
+                    System.Windows.MessageBox.Show(
+                        "監視フォルダが設定されていません。\nセットアップ > 設定... から設定してください。",
+                        "参加エラー",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                    return;
+                }
 
-            _participant.StatusChanged -= OnParticipationStatusChanged;
-            _participant.StatusChanged += OnParticipationStatusChanged;
-            _participant.Start(
-                MonitorPath,
-                string.IsNullOrEmpty(AerenderPath) ? null : AerenderPath,
-                keepWindowOpen: KeepAerenderWindowOpen,
-                pollIntervalSeconds: ScanIntervalSeconds > 0 ? ScanIntervalSeconds : 10);
+                _participant.StatusChanged -= OnParticipationStatusChanged;
+                _participant.StatusChanged += OnParticipationStatusChanged;
+                _participant.Start(
+                    MonitorPath,
+                    string.IsNullOrEmpty(AerenderPath) ? null : AerenderPath,
+                    keepWindowOpen: KeepAerenderWindowOpen,
+                    pollIntervalSeconds: ScanIntervalSeconds > 0 ? ScanIntervalSeconds : 10);
 
-            IsParticipating = true;
-        }
-
-        [RelayCommand(CanExecute = nameof(CanStopParticipation))]
-        private void StopParticipation()
-        {
-            _participant.Stop();
-            _participant.StatusChanged -= OnParticipationStatusChanged;
-            IsParticipating = false;
+                IsParticipating = true;
+            }
         }
 
         private void OnParticipationStatusChanged(string status)
@@ -509,7 +487,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 2.0.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 2.1.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
@@ -559,7 +537,6 @@ namespace AEWatchRenderManager.ViewModels
             }
         }
 
-        [RelayCommand]
         private void BrowseMoveTarget()
         {
             var dialog = new Microsoft.Win32.OpenFolderDialog

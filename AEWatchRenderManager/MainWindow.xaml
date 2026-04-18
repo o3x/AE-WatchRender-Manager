@@ -26,16 +26,10 @@
         <!-- メニューバー -->
         <Menu Grid.Row="0">
             <MenuItem Header="セットアップ(_S)">
-                <MenuItem Header="監視フォルダの設定..." Command="{Binding BrowseMonitorFolderCommand}"/>
-                <MenuItem Header="移動先フォルダの設定..." Command="{Binding BrowseMoveTargetCommand}"/>
-                <Separator/>
-                <MenuItem Header="aerender.exe の場所..." Command="{Binding BrowseAerenderExeCommand}"/>
-                <Separator/>
-                <MenuItem Header="aerender ウィンドウを残す" IsCheckable="True" IsChecked="{Binding KeepAerenderWindowOpen}"/>
+                <MenuItem Header="設定..." Command="{Binding OpenSettingsCommand}"/>
             </MenuItem>
             <MenuItem Header="操作(_T)">
-                <MenuItem Header="今すぐスキャン(F5)" Command="{Binding ScanNowCommand}"/>
-                <MenuItem Header="スキャンサイクルの設定..." Command="{Binding SetScanCycleCommand}"/>
+                <MenuItem Header="今すぐスキャン (F5)" Command="{Binding ScanNowCommand}"/>
                 <Separator/>
                 <MenuItem Header="すべて選択" Command="{Binding SelectAllCommand}"/>
                 <MenuItem Header="完了済みを選択" Command="{Binding SelectCompletedCommand}"/>
@@ -47,18 +41,55 @@
             </MenuItem>
         </Menu>
 
-        <!-- ボタン帯: ボタンのみ。監視状態・パスはステータスバーへ移動 -->
+        <!-- ツールバー -->
         <Border Grid.Row="1" Padding="6,4"
                 BorderBrush="{x:Static SystemColors.ControlDarkBrush}"
                 BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal">
-                <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
-                <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
-                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="28" FontWeight="Bold" Margin="0,0,12,0"/>
-                <Rectangle Width="1" Height="20" Fill="{x:Static SystemColors.ControlDarkBrush}" Margin="0,0,12,0"/>
-                <Button Content="参加開始" Command="{Binding StartParticipationCommand}" Width="100" Height="28" Margin="0,0,8,0"
-                        ToolTip="監視フォルダ内のキュー済みジョブを aerender で自動レンダリングします"/>
-                <Button Content="参加停止" Command="{Binding StopParticipationCommand}" Width="100" Height="28"/>
+
+                <!-- 監視トグル: 状態に応じてテキスト・色が変わる -->
+                <Button Command="{Binding ToggleMonitoringCommand}" Width="110" Height="28" Margin="0,0,4,0"
+                        ToolTip="監視フォルダのスキャンを開始/停止します">
+                    <TextBlock>
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="▶  監視"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
+                                        <Setter Property="Text" Value="■  監視中"/>
+                                        <Setter Property="Foreground" Value="Green"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Button>
+
+                <!-- スキャン -->
+                <Button Content="SCAN NOW" Command="{Binding ScanNowCommand}"
+                        Width="90" Height="28" FontWeight="Bold" Margin="0,0,16,0"/>
+
+                <!-- セパレータ -->
+                <Rectangle Width="1" Height="20" Fill="{x:Static SystemColors.ControlDarkBrush}" Margin="0,0,16,0"/>
+
+                <!-- 参加トグル: 状態に応じてテキスト・色が変わる -->
+                <Button Command="{Binding ToggleParticipationCommand}" Width="110" Height="28"
+                        ToolTip="監視フォルダ内のキュー済みジョブを aerender で自動レンダリングします">
+                    <TextBlock>
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="▶  参加"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsParticipating}" Value="True">
+                                        <Setter Property="Text" Value="■  参加中"/>
+                                        <Setter Property="Foreground" Value="DarkOrange"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Button>
+
             </StackPanel>
         </Border>
 
