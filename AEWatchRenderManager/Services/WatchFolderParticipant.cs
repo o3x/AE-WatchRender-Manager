@@ -3,11 +3,9 @@
 // Updated: Sat Apr 18 19:06:22 JST 2026
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -221,10 +219,8 @@ namespace AEWatchRenderManager.Services
                 UpdateRcfStatus(rcfPath, content, renderingLine, claimInit: true);
                 ReportStatus($"レンダリング中: {projectName}");
 
-                // aerender 実行
-                var logFile = Path.Combine(projectDir,
-                    $"{projectName}_{DateTime.Now:yyyyMMdd_HHmmss}_aerender.log");
-                bool success = await RunAerenderAsync(aerenderPath, aepPath, logFile, ct);
+                // aerender 実行（cmd ウィンドウを表示して処理を可視化）
+                bool success = await RunAerenderAsync(aerenderPath, aepPath, ct);
 
                 // RCF を完了/エラー状態に更新
                 var finalContent = ReadRcfContent(rcfPath) ?? content;
@@ -252,55 +248,36 @@ namespace AEWatchRenderManager.Services
         // ─────────────────────────────────────────────────────────
 
         private static async Task<bool> RunAerenderAsync(
-            string aerenderPath, string aepPath, string logFilePath, CancellationToken ct)
+            string aerenderPath, string aepPath, CancellationToken ct)
         {
+            // @problem: UseShellExecute=false + CreateNoWindow=true だと aerender が完全に
+            //           バックグラウンド動作になり、ユーザーが処理中かどうか判断できない。
+            // @solution: cmd /C で実行（手動「aerenderで参加」と同じ方式）。
+            //            cmd ウィンドウに aerender の出力がリアルタイム表示され、
+            //            完了後は /C によりウィンドウが自動で閉じる。
+            //            exit code は cmd が aerender の終了コードをそのまま引き継ぐ。
             using var proc = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = aerenderPath,
-                    Arguments = $"-project \"{aepPath}\"",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
+                    FileName = "cmd.exe",
+                    Arguments = $"/C \"\"{aerenderPath}\" -project \"{aepPath}\"\"",
+                    UseShellExecute = true
                 }
             };
 
             try
             {
                 proc.Start();
-
-                // @problem: BeginOutputReadLine + WaitForExitAsync だと CT キャンセル後に
-                //           ストリームが閉じられず await が永久にブロックすることがある。
-                // @solution: ReadToEndAsync を proc.Start 直後に起動（並行実行）し、
-                //            WaitForExitAsync 後に await する。こうすることで
-                //            プロセス終了→ストリーム EOF→ReadToEnd 完了の順が保証される。
-                var stdoutTask = proc.StandardOutput.ReadToEndAsync();
-                var stderrTask = proc.StandardError.ReadToEndAsync();
-
                 try
                 {
                     await proc.WaitForExitAsync(ct);
                 }
                 catch (OperationCanceledException)
                 {
-                    if (!proc.HasExited) try { proc.Kill(entireProcessTree: true); } catch { }
+                    if (!proc.HasExited) try { proc.Kill(); } catch { }
                     throw;
                 }
-
-                var stdout = await stdoutTask;
-                var stderr = await stderrTask;
-
-                try
-                {
-                    await File.WriteAllTextAsync(logFilePath, stdout + stderr);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[WatchFolderParticipant] ログ書き込み失敗: {ex.Message}");
-                }
-
                 return proc.ExitCode == 0;
             }
             catch (OperationCanceledException) { throw; }
