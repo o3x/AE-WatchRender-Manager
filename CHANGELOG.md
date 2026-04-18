@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.16.19] - Sat Apr 18 09:28:17 JST 2026
+
+- コードレビュー指摘対応
+  - **[B2] バグ修正**: `ParseReportFileAsync` にエンコーディング `shift-jis` を指定
+    - AE が生成する `*_レポート.txt` は Shift-JIS だが UTF-8 で読んでいたため日本語プロジェクト名の解析が常に失敗していた
+    - `TryUpdateOutputPathAsync` の `item*.htm` 読み込みと同様に `shift-jis` を明示指定
+  - **[B1] バグ修正**: バージョン情報ダイアログのバージョン文字列を正しい番号に修正
+  - **[B3] 改善**: `TriggerImmediateScan` の `async void` を `ContinueWith` パターンに変更し例外が握り潰されないように修正
+  - **[W1] 整理**: `AddOrUpdateRcfTask` 内の二重 `Dispatcher.Invoke` を削除（呼び出し元が既に Dispatcher 内）
+  - **[W2] 整理**: `UpdateWindowTitle` の不要な `_scanTimer != null` チェックを削除
+  - **[W3] 整理**: `SettingsService` の `JsonSerializerOptions` を `static readonly` フィールドに移動
+
 ## [1.16.18] - Sat Apr 18 09:03:59 JST 2026
 
 - `ResolveCompName` の `[compName]` 置換バグを修正

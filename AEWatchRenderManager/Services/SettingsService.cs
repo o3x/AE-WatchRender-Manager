@@ -17,8 +17,10 @@ namespace AEWatchRenderManager.Services
         private static readonly string AppDataPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "AEWatchRenderManager");
-        
+
         private static readonly string ConfigFile = Path.Combine(AppDataPath, "config.json");
+
+        private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
 
         public static AppSettings Load()
         {
@@ -45,7 +47,7 @@ namespace AEWatchRenderManager.Services
                     Directory.CreateDirectory(AppDataPath);
                 }
 
-                var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+                var json = JsonSerializer.Serialize(settings, WriteOptions);
                 File.WriteAllText(ConfigFile, json);
             }
             catch (IOException ex) { Debug.WriteLine($"[SettingsService.Save] IO例外: {ex.Message}"); }

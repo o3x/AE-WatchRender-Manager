@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Wed Apr 15 11:17:09 JST 2026
-    // Version: 1.16.13
+    // Date: Sat Apr 18 09:28:17 JST 2026
+    // Version: 1.16.19
     public class TaskPairManager
     {
         public ObservableCollection<RenderTaskPair> Tasks { get; } = new();
@@ -53,8 +53,7 @@ namespace AEWatchRenderManager.Services
             var existingTask = Tasks.FirstOrDefault(t => string.Equals(t.RcfFilePath, rcfPath, StringComparison.OrdinalIgnoreCase));
             if (existingTask == null)
             {
-                var newTask = new RenderTaskPair(rcfPath);
-                Application.Current.Dispatcher.Invoke(() => Tasks.Add(newTask));
+                Tasks.Add(new RenderTaskPair(rcfPath));
             }
         }
 

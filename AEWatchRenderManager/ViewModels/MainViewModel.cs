@@ -13,8 +13,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Sat Apr 18 08:45:46 JST 2026
-    // Version: 1.16.17
+    // Date: Sat Apr 18 09:28:17 JST 2026
+    // Version: 1.16.19
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -95,7 +95,7 @@ namespace AEWatchRenderManager.ViewModels
 
         private void UpdateWindowTitle()
         {
-            if (_scanTimer != null && _scanTimer.IsEnabled)
+            if (_scanTimer.IsEnabled)
             {
                 WindowTitle = $"AE WatchRender Manager [監視中: {MonitorPath}]";
             }
@@ -231,20 +231,21 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.16.17\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 1.16.19\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
         }
 
-        private async void TriggerImmediateScan()
+        private void TriggerImmediateScan()
         {
             if (!_scanTimer.IsEnabled) return;
 
             // タイマーを一度止めて、スキャン後に再開（リセット）
             _scanTimer.Stop();
-            await ScanMonitorFolderAsync();
-            _scanTimer.Start();
+            _ = ScanMonitorFolderAsync()
+                .ContinueWith(_ => System.Windows.Application.Current.Dispatcher.Invoke(_scanTimer.Start),
+                    System.Threading.Tasks.TaskContinuationOptions.None);
         }
 
 

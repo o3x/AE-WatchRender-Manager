@@ -8,8 +8,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Sat Apr 18 09:03:59 JST 2026
-    // Version: 1.16.18
+    // Date: Sat Apr 18 09:28:17 JST 2026
+    // Version: 1.16.19
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -211,7 +211,7 @@ namespace AEWatchRenderManager.Services
             try
             {
                 using var fs = new FileStream(task.HtmlLogFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                using var sr = new StreamReader(fs);
+                using var sr = new StreamReader(fs, System.Text.Encoding.GetEncoding("shift-jis"));
                 var content = await sr.ReadToEndAsync();
 
                 // "プロジェクト名 : aaaaaa.aep" の解析 と更新
