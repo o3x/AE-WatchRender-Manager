@@ -11,6 +11,8 @@ namespace AEWatchRenderManager.Services
         public string MoveTargetPath { get; set; } = string.Empty;
         public int ScanIntervalSeconds { get; set; } = 60;
         public string AerenderPath { get; set; } = string.Empty;
+        /// <summary>aerender 完了後も cmd ウィンドウを残すか。false = /C（自動で閉じる）、true = /K（残る）</summary>
+        public bool KeepAerenderWindowOpen { get; set; } = false;
     }
 
     public static class SettingsService

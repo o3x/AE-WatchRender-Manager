@@ -30,6 +30,8 @@
                 <MenuItem Header="移動先フォルダの設定..." Command="{Binding BrowseMoveTargetCommand}"/>
                 <Separator/>
                 <MenuItem Header="aerender.exe の場所..." Command="{Binding BrowseAerenderExeCommand}"/>
+                <Separator/>
+                <MenuItem Header="aerender ウィンドウを残す" IsCheckable="True" IsChecked="{Binding KeepAerenderWindowOpen}"/>
             </MenuItem>
             <MenuItem Header="操作(_T)">
                 <MenuItem Header="今すぐスキャン(F5)" Command="{Binding ScanNowCommand}"/>

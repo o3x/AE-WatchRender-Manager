@@ -1,5 +1,5 @@
 // WatchFolderParticipant.cs
-// Version: 2.0.2
+// Version: 2.0.3
 // Updated: Sat Apr 18 19:06:22 JST 2026
 
 using System;
@@ -24,15 +24,17 @@ namespace AEWatchRenderManager.Services
         public bool IsRunning => _cts != null && !_cts.IsCancellationRequested;
 
         private CancellationTokenSource? _cts;
+        private bool _keepWindowOpen;
         private static readonly string MachineName = Environment.MachineName;
         private static readonly Regex InitPattern = new(@"init=(\d+)", RegexOptions.Compiled);
 
         // ロックファイルがこの時間より古ければ停止したマシンのロックとみなして無視する
         private const int StaleLockMinutes = 30;
 
-        public void Start(string monitorPath, string? userAerenderPath, int pollIntervalSeconds = 10)
+        public void Start(string monitorPath, string? userAerenderPath, bool keepWindowOpen = false, int pollIntervalSeconds = 10)
         {
             if (_cts != null) return;
+            _keepWindowOpen = keepWindowOpen;
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
             _ = Task.Run(() => RunLoopAsync(monitorPath, userAerenderPath, pollIntervalSeconds, ct), ct);
@@ -222,8 +224,8 @@ namespace AEWatchRenderManager.Services
                 UpdateRcfStatus(rcfPath, content, renderingLine, claimInit: true);
                 ReportStatus($"レンダリング中: {projectName}");
 
-                // aerender 実行（cmd ウィンドウを表示して処理を可視化）
-                bool success = await RunAerenderAsync(aerenderPath, aepPath, ct);
+                // aerender 実行（最小化で起動。_keepWindowOpen=true なら完了後もウィンドウを残す）
+                bool success = await RunAerenderAsync(aerenderPath, aepPath, _keepWindowOpen, ct);
 
                 // RCF を完了/エラー状態に更新
                 var finalContent = ReadRcfContent(rcfPath) ?? content;
@@ -251,21 +253,20 @@ namespace AEWatchRenderManager.Services
         // ─────────────────────────────────────────────────────────
 
         private static async Task<bool> RunAerenderAsync(
-            string aerenderPath, string aepPath, CancellationToken ct)
+            string aerenderPath, string aepPath, bool keepWindowOpen, CancellationToken ct)
         {
-            // @problem: UseShellExecute=false + CreateNoWindow=true だと aerender が完全に
-            //           バックグラウンド動作になり、ユーザーが処理中かどうか判断できない。
-            // @solution: cmd /C で実行（手動「aerenderで参加」と同じ方式）。
-            //            cmd ウィンドウに aerender の出力がリアルタイム表示され、
-            //            完了後は /C によりウィンドウが自動で閉じる。
-            //            exit code は cmd が aerender の終了コードをそのまま引き継ぐ。
+            // 最小化で起動して作業の邪魔にならないようにする。
+            // keepWindowOpen=false → /C（完了後にウィンドウが自動で閉じる）
+            // keepWindowOpen=true  → /K（完了後もウィンドウが残り出力を確認できる）
+            var cmdSwitch = keepWindowOpen ? "/K" : "/C";
             using var proc = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/C \"\"{aerenderPath}\" -project \"{aepPath}\"\"",
-                    UseShellExecute = true
+                    Arguments = $"{cmdSwitch} \"\"{aerenderPath}\" -project \"{aepPath}\"\"",
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Minimized
                 }
             };
 

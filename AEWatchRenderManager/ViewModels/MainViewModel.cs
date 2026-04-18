@@ -38,6 +38,10 @@ namespace AEWatchRenderManager.ViewModels
         [ObservableProperty]
         private string _aerenderPath = string.Empty;
 
+        /// <summary>aerender 完了後も cmd ウィンドウを残すか。false = /C（自動で閉じる）、true = /K（残る）</summary>
+        [ObservableProperty]
+        private bool _keepAerenderWindowOpen = false;
+
         /// <summary>最終スキャン時刻。スキャン完了時のみ更新。StatusBar に表示する。</summary>
         [ObservableProperty]
         private string _lastScanText = "---";
@@ -69,6 +73,7 @@ namespace AEWatchRenderManager.ViewModels
         partial void OnMonitorPathChanged(string value) => SaveSettings();
         partial void OnMoveTargetPathChanged(string value) => SaveSettings();
         partial void OnAerenderPathChanged(string value) => SaveSettings();
+        partial void OnKeepAerenderWindowOpenChanged(bool value) => SaveSettings();
         partial void OnScanIntervalSecondsChanged(int value)
         {
             if (_scanTimer != null && _scanTimer.IsEnabled)
@@ -115,6 +120,7 @@ namespace AEWatchRenderManager.ViewModels
             _moveTargetPath = settings.MoveTargetPath;
             _scanIntervalSeconds = settings.ScanIntervalSeconds;
             _aerenderPath = settings.AerenderPath;
+            _keepAerenderWindowOpen = settings.KeepAerenderWindowOpen;
 
             _scanTimer = new DispatcherTimer();
             _scanTimer.Tick += async (s, e) => await ScanMonitorFolderAsync();
@@ -136,7 +142,8 @@ namespace AEWatchRenderManager.ViewModels
                 MonitorPath = MonitorPath,
                 MoveTargetPath = MoveTargetPath,
                 ScanIntervalSeconds = ScanIntervalSeconds,
-                AerenderPath = AerenderPath
+                AerenderPath = AerenderPath,
+                KeepAerenderWindowOpen = KeepAerenderWindowOpen
             });
         }
 
@@ -351,15 +358,17 @@ namespace AEWatchRenderManager.ViewModels
 
                 try
                 {
-                    // @problem: スペースを含むパス（Program Files 等）を cmd /K に渡す場合、
+                    // @problem: スペースを含むパス（Program Files 等）を cmd に渡す場合、
                     //           パスを "" で囲むだけでは不十分で cmd がパースに失敗する。
-                    // @solution: cmd /K の規則に従い、コマンド全体をさらに "" で囲む。
-                    //            /K ""path\aerender.exe" -project "path\file.aep""
+                    // @solution: cmd のスイッチに従い、コマンド全体をさらに "" で囲む。
+                    //            ""path\aerender.exe" -project "path\file.aep""
+                    var cmdSwitch = KeepAerenderWindowOpen ? "/K" : "/C";
                     Process.Start(new ProcessStartInfo
                     {
                         FileName = "cmd.exe",
-                        Arguments = $"/K \"\"{aerender}\" -project \"{task.AepFilePath}\"\"",
-                        UseShellExecute = true
+                        Arguments = $"{cmdSwitch} \"\"{aerender}\" -project \"{task.AepFilePath}\"\"",
+                        UseShellExecute = true,
+                        WindowStyle = ProcessWindowStyle.Minimized
                     });
                 }
                 catch (Exception ex)
@@ -396,6 +405,7 @@ namespace AEWatchRenderManager.ViewModels
             _participant.Start(
                 MonitorPath,
                 string.IsNullOrEmpty(AerenderPath) ? null : AerenderPath,
+                keepWindowOpen: KeepAerenderWindowOpen,
                 pollIntervalSeconds: ScanIntervalSeconds > 0 ? ScanIntervalSeconds : 10);
 
             IsParticipating = true;
