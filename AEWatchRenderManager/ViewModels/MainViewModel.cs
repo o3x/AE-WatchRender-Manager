@@ -13,8 +13,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Sat Apr 18 09:28:17 JST 2026
-    // Version: 1.16.19
+    // Date: Sat Apr 18 13:39:29 JST 2026
+    // Version: 1.17.0
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -32,6 +32,9 @@ namespace AEWatchRenderManager.ViewModels
         [ObservableProperty]
         private string _moveTargetPath = string.Empty;
 
+        [ObservableProperty]
+        private string _aerenderPath = string.Empty;
+
         /// <summary>最終スキャン時刻。スキャン完了時のみ更新。StatusBar に表示する。</summary>
         [ObservableProperty]
         private string _lastScanText = "---";
@@ -44,6 +47,7 @@ namespace AEWatchRenderManager.ViewModels
 
         partial void OnMonitorPathChanged(string value) => SaveSettings();
         partial void OnMoveTargetPathChanged(string value) => SaveSettings();
+        partial void OnAerenderPathChanged(string value) => SaveSettings();
         partial void OnScanIntervalSecondsChanged(int value)
         {
             if (_scanTimer != null && _scanTimer.IsEnabled)
@@ -74,6 +78,7 @@ namespace AEWatchRenderManager.ViewModels
             _monitorPath = settings.MonitorPath;
             _moveTargetPath = settings.MoveTargetPath;
             _scanIntervalSeconds = settings.ScanIntervalSeconds;
+            _aerenderPath = settings.AerenderPath;
 
             _scanTimer = new DispatcherTimer();
             _scanTimer.Tick += async (s, e) => await ScanMonitorFolderAsync();
@@ -89,7 +94,8 @@ namespace AEWatchRenderManager.ViewModels
             {
                 MonitorPath = MonitorPath,
                 MoveTargetPath = MoveTargetPath,
-                ScanIntervalSeconds = ScanIntervalSeconds
+                ScanIntervalSeconds = ScanIntervalSeconds,
+                AerenderPath = AerenderPath
             });
         }
 
@@ -225,6 +231,94 @@ namespace AEWatchRenderManager.ViewModels
             {
                 task.IsSelected = (task.Status == RenderStatus.Completed);
             }
+        }
+
+        [RelayCommand]
+        private void BrowseAerenderExe()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "aerender.exe を選択してください",
+                Filter = "aerender.exe|aerender.exe|実行ファイル (*.exe)|*.exe",
+                FileName = "aerender.exe"
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                AerenderPath = dialog.FileName;
+            }
+        }
+
+        [RelayCommand]
+        private void JoinWatchFolder()
+        {
+            if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath))
+            {
+                System.Windows.MessageBox.Show(
+                    "監視フォルダが設定されていません。\n先に監視フォルダを設定してください。",
+                    "操作エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+
+            var aerender = ResolveAerenderPath();
+            if (aerender == null)
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "aerender.exe が見つかりませんでした。\n\n手動で場所を指定しますか？\n（インストール先の例: C:\\Program Files\\Adobe\\Adobe After Effects 2024\\Support Files\\aerender.exe）",
+                    "aerender.exe が見つかりません",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Question);
+                if (result == System.Windows.MessageBoxResult.Yes)
+                    BrowseAerenderExe();
+                return;
+            }
+
+            try
+            {
+                // 新しいコンソールウィンドウで aerender を起動する
+                // UseShellExecute=false + CreateNoWindow=false だと cmd ウィンドウが開かないため
+                // cmd.exe /K で起動してウィンドウを維持する
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/K \"{aerender}\" -watchfolder \"{MonitorPath}\"",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    $"aerender の起動に失敗しました:\n{ex.Message}",
+                    "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 設定値→自動検出の順で aerender.exe のパスを解決する。
+        /// 自動検出成功時は設定に保存して次回以降の検索を省略する。
+        /// </summary>
+        private string? ResolveAerenderPath()
+        {
+            if (!string.IsNullOrEmpty(AerenderPath) && File.Exists(AerenderPath))
+                return AerenderPath;
+
+            // Program Files 下の AE インストールフォルダを新しいバージョン順に検索
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            var adobeDir = Path.Combine(programFiles, "Adobe");
+            if (Directory.Exists(adobeDir))
+            {
+                var found = Directory.GetDirectories(adobeDir, "Adobe After Effects*")
+                    .OrderByDescending(d => d)
+                    .Select(d => Path.Combine(d, "Support Files", "aerender.exe"))
+                    .FirstOrDefault(File.Exists);
+
+                if (found != null)
+                {
+                    AerenderPath = found; // 次回以降の検索を省略
+                    return found;
+                }
+            }
+
+            return null;
         }
 
         [RelayCommand]

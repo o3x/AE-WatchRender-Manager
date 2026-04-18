@@ -10,6 +10,7 @@ namespace AEWatchRenderManager.Services
         public string MonitorPath { get; set; } = string.Empty;
         public string MoveTargetPath { get; set; } = string.Empty;
         public int ScanIntervalSeconds { get; set; } = 60;
+        public string AerenderPath { get; set; } = string.Empty;
     }
 
     public static class SettingsService

@@ -28,6 +28,8 @@
             <MenuItem Header="セットアップ(_S)">
                 <MenuItem Header="監視フォルダの設定..." Command="{Binding BrowseMonitorFolderCommand}"/>
                 <MenuItem Header="移動先フォルダの設定..." Command="{Binding BrowseMoveTargetCommand}"/>
+                <Separator/>
+                <MenuItem Header="aerender.exe の場所..." Command="{Binding BrowseAerenderExeCommand}"/>
             </MenuItem>
             <MenuItem Header="操作(_T)">
                 <MenuItem Header="今すぐスキャン(F5)" Command="{Binding ScanNowCommand}"/>
@@ -48,7 +50,10 @@
             <StackPanel Orientation="Horizontal">
                 <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
                 <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
-                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="28" FontWeight="Bold"/>
+                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="28" FontWeight="Bold" Margin="0,0,16,0"/>
+                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,4,16,4"/>
+                <Button Content="aerender で参加" Command="{Binding JoinWatchFolderCommand}" Width="130" Height="28"
+                        ToolTip="aerender.exe を使ってこの監視フォルダのレンダリングに参加します"/>
             </StackPanel>
         </Border>
 
