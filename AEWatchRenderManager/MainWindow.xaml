@@ -52,7 +52,11 @@
             <StackPanel Orientation="Horizontal">
                 <Button Content="監視開始" Command="{Binding StartMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
                 <Button Content="監視停止" Command="{Binding StopMonitoringCommand}" Width="100" Height="28" Margin="0,0,8,0"/>
-                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="28" FontWeight="Bold"/>
+                <Button Content="SCAN NOW (F5)" Command="{Binding ScanNowCommand}" Width="150" Height="28" FontWeight="Bold" Margin="0,0,16,0"/>
+                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,0,16,0"/>
+                <Button Content="参加開始" Command="{Binding StartParticipationCommand}" Width="100" Height="28" Margin="0,0,8,0"
+                        ToolTip="監視フォルダ内のキュー済みジョブを aerender で自動レンダリングします"/>
+                <Button Content="参加停止" Command="{Binding StopParticipationCommand}" Width="100" Height="28"/>
             </StackPanel>
         </Border>
 
@@ -100,7 +104,7 @@
                     <Separator/>
                     <MenuItem Header="ごみ箱へ削除" Command="{Binding DeleteTaskCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <Separator/>
-                    <MenuItem Header="aerender でレンダリング"
+                    <MenuItem Header="aerenderで参加"
                               Command="{Binding RenderWithAerenderCommand}"
                               CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                 </ContextMenu>
@@ -188,6 +192,37 @@
                     <TextBlock Text="{Binding ScanIntervalSeconds}"/>
                     <TextBlock Text=" 秒" Foreground="{x:Static SystemColors.GrayTextBrush}"/>
                 </StackPanel>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock>
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="○ 未参加"/>
+                            <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsParticipating}" Value="True">
+                                    <Setter Property="Text" Value="◎ 参加中"/>
+                                    <Setter Property="Foreground" Value="DarkOrange"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="{Binding ParticipationStatusText}" MaxWidth="300"
+                           TextTrimming="CharacterEllipsis" ToolTip="{Binding ParticipationStatusText}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsParticipating}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <TextBlock Text="{Binding UpdateNotice}" Foreground="DarkOrange" FontWeight="Bold"

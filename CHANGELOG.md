@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.0.0] - Sat Apr 18 19:06:22 JST 2026
+
+- **新機能**: 監視フォルダ参加機能（aerender による自動レンダリングワーカー）を追加
+  - ツールバーに「参加開始」「参加停止」ボタンを追加
+  - 監視フォルダ内のキュー済み（`init=0`）RCF を自動検出し、aerender でレンダリング
+  - AEP バイナリヘッダーから対応 AE バージョンの aerender.exe を自動選択
+  - ロックファイル（`{MachineName}_{ProjectName}_RCF.lock`）で複数マシン間の競合を防止
+  - 30 分以上古いロックファイルは停止済みマシンのものとして無視（スタレロック対策）
+  - aerender の標準出力を `{ProjectName}_{timestamp}_aerender.log` に記録
+  - RCF に `(Rendering...)` → `(Finished...)` / `(Error...)` を書き込み、既存の状態表示と連携
+  - ステータスバーに参加状態と現在の動作（待機中 / レンダリング中 / 完了）を表示
+- **リファクタリング**: aerender パス解決と AEP バージョン読み取りロジックを `AerenderPathResolver` に抽出
+  - `MainViewModel` と `WatchFolderParticipant` の両方から共有
+- 右クリックメニューの「aerender でレンダリング」を「aerenderで参加」に改名
+
 ## [1.21.1] - Sat Apr 18 17:40:06 JST 2026
 
 - 右クリックメニューの「aerender でレンダリング」を最下部に移動

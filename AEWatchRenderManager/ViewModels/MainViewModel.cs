@@ -16,8 +16,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Sat Apr 18 14:08:25 JST 2026
-    // Version: 1.21.0
+    // Date: Sat Apr 18 19:06:22 JST 2026
+    // Version: 2.0.0
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -46,6 +46,20 @@ namespace AEWatchRenderManager.ViewModels
         [ObservableProperty]
         private string _updateNotice = string.Empty;
 
+        /// <summary>aerender 参加ループが動作中かどうか。</summary>
+        [ObservableProperty]
+        private bool _isParticipating;
+
+        /// <summary>参加ワーカーのステータス文字列。StatusBar に表示する。</summary>
+        [ObservableProperty]
+        private string _participationStatusText = string.Empty;
+
+        partial void OnIsParticipatingChanged(bool value)
+        {
+            StartParticipationCommand.NotifyCanExecuteChanged();
+            StopParticipationCommand.NotifyCanExecuteChanged();
+        }
+
         partial void OnIsMonitoringChanged(bool value)
         {
             StartMonitoringCommand.NotifyCanExecuteChanged();
@@ -72,7 +86,7 @@ namespace AEWatchRenderManager.ViewModels
         private string _currentSortColumn = string.Empty;
         private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
 
-        private const string CurrentVersion = "1.21.0";
+        private const string CurrentVersion = "2.0.0";
         private const string GitHubApiLatest = "https://api.github.com/repos/o3x/AE-WatchRender-Manager/releases/latest";
 
         // HttpClient はインスタンスを使い回す（都度 new するとソケット枯渇の原因になる）
@@ -88,6 +102,7 @@ namespace AEWatchRenderManager.ViewModels
 
         private readonly TaskPairManager _taskManager;
         private readonly DispatcherTimer _scanTimer;
+        private readonly WatchFolderParticipant _participant = new();
         private bool _isScanning = false;
 
         public MainViewModel()
@@ -297,8 +312,8 @@ namespace AEWatchRenderManager.ViewModels
                 }
 
                 // 1. AEP が要求するバージョンに対応する aerender を探す
-                var aepMajor = ReadAepMajorVersion(task.AepFilePath);
-                var aerender = aepMajor > 0 ? FindAerenderForVersion(aepMajor) : null;
+                var aepMajor = AerenderPathResolver.ReadAepMajorVersion(task.AepFilePath);
+                var aerender = aepMajor > 0 ? AerenderPathResolver.FindForVersion(aepMajor) : null;
 
                 // 2. バージョン一致の aerender が見つからない場合はフォールバック
                 if (aerender == null)
@@ -319,7 +334,7 @@ namespace AEWatchRenderManager.ViewModels
                     // フォールバック時のみバージョン不一致を警告
                     if (aepMajor > 0)
                     {
-                        var aerenderMajor = GetAerenderMajorVersion(aerender);
+                        var aerenderMajor = AerenderPathResolver.GetMajorVersion(aerender);
                         if (aerenderMajor > 0 && aerenderMajor != aepMajor)
                         {
                             var warn = System.Windows.MessageBox.Show(
@@ -356,95 +371,53 @@ namespace AEWatchRenderManager.ViewModels
             }
         }
 
-        /// <summary>
-        /// AEP のメジャーバージョンに対応する aerender.exe のパスを返す。
-        /// AEselector の ResolveAePath と同じフォルダ名計算ロジック。
-        /// 該当バージョンがインストールされていない場合は null を返す。
-        /// </summary>
-        private static string? FindAerenderForVersion(int majorVersion)
+        // ─────────────────────────────────────────────────────────
+        // 監視フォルダ参加コマンド (v2.0)
+        // ─────────────────────────────────────────────────────────
+
+        private bool CanStartParticipation() => !IsParticipating;
+        private bool CanStopParticipation()  => IsParticipating;
+
+        [RelayCommand(CanExecute = nameof(CanStartParticipation))]
+        private void StartParticipation()
         {
-            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-            var adobeDir = Path.Combine(programFiles, "Adobe");
-            if (!Directory.Exists(adobeDir)) return null;
-
-            var folderName = majorVersion switch
+            if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath))
             {
-                >= 22 => $"Adobe After Effects {2000 + majorVersion}",
-                >= 17 => $"Adobe After Effects {2003 + majorVersion}",
-                >= 14 => $"Adobe After Effects CC {2003 + majorVersion}",
-                11    => "Adobe After Effects CS6",
-                10    => "Adobe After Effects CS5",
-                9     => "Adobe After Effects CS4",
-                _     => null
-            };
-            if (folderName == null) return null;
+                System.Windows.MessageBox.Show(
+                    "監視フォルダが設定されていません。先に「監視開始」または「監視フォルダの設定」を行ってください。",
+                    "参加エラー",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+                return;
+            }
 
-            var aerender = Path.Combine(adobeDir, folderName, "Support Files", "aerender.exe");
-            return File.Exists(aerender) ? aerender : null;
+            _participant.StatusChanged -= OnParticipationStatusChanged;
+            _participant.StatusChanged += OnParticipationStatusChanged;
+            _participant.Start(
+                MonitorPath,
+                string.IsNullOrEmpty(AerenderPath) ? null : AerenderPath,
+                pollIntervalSeconds: ScanIntervalSeconds > 0 ? ScanIntervalSeconds : 10);
+
+            IsParticipating = true;
         }
 
-        /// <summary>
-        /// aerender.exe を -version フラグで起動してメジャーバージョン番号を取得する。
-        /// フォールバック時のバージョン不一致確認にのみ使用。取得失敗時は 0 を返す。
-        /// </summary>
-        private static int GetAerenderMajorVersion(string aerenderPath)
+        [RelayCommand(CanExecute = nameof(CanStopParticipation))]
+        private void StopParticipation()
         {
-            try
-            {
-                using var proc = Process.Start(new ProcessStartInfo
-                {
-                    FileName = aerenderPath,
-                    Arguments = "-version",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                })!;
-                var output = proc.StandardOutput.ReadToEnd();
-                proc.WaitForExit(5000);
-
-                var m = Regex.Match(output, @"aerender version (\d+)\.");
-                if (m.Success && int.TryParse(m.Groups[1].Value, out int ver))
-                    return ver;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[GetAerenderVersion] {ex.Message}");
-            }
-            return 0;
+            _participant.Stop();
+            _participant.StatusChanged -= OnParticipationStatusChanged;
+            IsParticipating = false;
         }
 
-        /// <summary>
-        /// AEP バイナリヘッダーを解析して AE メジャーバージョン番号を返す。
-        /// AEselector プロジェクトの GetAeVersionFromFile と同じロジック。
-        /// 解析失敗時は 0 を返す。
-        /// </summary>
-        private static int ReadAepMajorVersion(string aepPath)
+        private void OnParticipationStatusChanged(string status)
         {
-            try
-            {
-                using var fs = new FileStream(aepPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                using var br = new BinaryReader(fs);
-                var b = br.ReadBytes(48);
-                if (b.Length < 48) return 0;
-
-                // マジックナンバー確認: RIFF or RIFX + "Egg!" (offset 8)
-                bool isRiff = b[0] == 0x52 && b[1] == 0x49 && b[2] == 0x46 && b[3] == 0x46;
-                bool isRifx = b[0] == 0x52 && b[1] == 0x49 && b[2] == 0x46 && b[3] == 0x58;
-                bool isEgg  = b[8] == 0x45 && b[9] == 0x67 && b[10] == 0x67 && b[11] == 0x21;
-                if ((!isRiff && !isRifx) || !isEgg) return 0;
-
-                // CS6以降: offset 0x18 == 0x68。バージョンは offset 0x24 から。
-                // CS5以前: バージョンは offset 0x18 から。
-                return b[0x18] == 0x68
-                    ? ((b[0x24] << 1) & 0xF8) | ((b[0x25] >> 3) & 0x07)
-                    : ((b[0x18] << 1) & 0xF8) | ((b[0x19] >> 3) & 0x07);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[ReadAepVersion] {ex.Message}");
-                return 0;
-            }
+            System.Windows.Application.Current.Dispatcher.Invoke(
+                () => ParticipationStatusText = status);
         }
+
+        // ─────────────────────────────────────────────────────────
+        // aerender パス解決
+        // ─────────────────────────────────────────────────────────
 
         /// <summary>
         /// 設定値→自動検出の順で aerender.exe のパスを解決する。
@@ -455,24 +428,12 @@ namespace AEWatchRenderManager.ViewModels
             if (!string.IsNullOrEmpty(AerenderPath) && File.Exists(AerenderPath))
                 return AerenderPath;
 
-            // Program Files 下の AE インストールフォルダを新しいバージョン順に検索
-            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-            var adobeDir = Path.Combine(programFiles, "Adobe");
-            if (Directory.Exists(adobeDir))
+            var found = AerenderPathResolver.FindNewest();
+            if (found != null)
             {
-                var found = Directory.GetDirectories(adobeDir, "Adobe After Effects*")
-                    .OrderByDescending(d => d)
-                    .Select(d => Path.Combine(d, "Support Files", "aerender.exe"))
-                    .FirstOrDefault(File.Exists);
-
-                if (found != null)
-                {
-                    AerenderPath = found; // 次回以降の検索を省略
-                    return found;
-                }
+                AerenderPath = found; // 次回以降の検索を省略
             }
-
-            return null;
+            return found;
         }
 
         [RelayCommand]
@@ -538,7 +499,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.21.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 2.0.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
