@@ -8,8 +8,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Sat Apr 18 08:45:46 JST 2026
-    // Version: 1.16.17
+    // Date: Sat Apr 18 09:03:59 JST 2026
+    // Version: 1.16.18
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -172,8 +172,14 @@ namespace AEWatchRenderManager.Services
             if (!path.Contains("[compName]", StringComparison.OrdinalIgnoreCase))
                 return path;
 
-            // <H3> 内の 「コンポ名」 または "CompName" を抽出
-            var m = Regex.Match(htmlContent, @"[「""]([^」""]{1,256})[」""]");
+            // @problem: <meta http-equiv="Content-Type" ...> の "Content-Type" が先にマッチしてしまう。
+            // @solution: まず <H3> タグの内容だけを切り出し、その中で 「コンポ名」 または "CompName" を探す。
+            var h3Match = Regex.Match(htmlContent, @"<H3[^>]*>\s*(.*?)\s*</H3>",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (!h3Match.Success) return path;
+
+            var h3Content = h3Match.Groups[1].Value;
+            var m = Regex.Match(h3Content, @"[「""]([^」""]{1,256})[」""]");
             if (!m.Success) return path;
 
             var compName = m.Groups[1].Value.Trim();

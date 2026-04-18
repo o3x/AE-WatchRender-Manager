@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.16.18] - Sat Apr 18 09:03:59 JST 2026
+
+- `ResolveCompName` の `[compName]` 置換バグを修正
+  - `<meta http-equiv="Content-Type" ...>` の `"Content-Type"` が先にマッチして誤った名前で置換されていた
+  - `<H3>` タグの内容だけを先に切り出し、その中でコンポ名を探すよう修正（`RegexOptions.Singleline` で複数行 H3 に対応）
+
 ## [1.16.17] - Sat Apr 18 08:48:08 JST 2026
 
 - `StatusAnalyzer.TryUpdateOutputPathAsync` で `item*.htm` 内の `[compName]` プレースホルダーを実際のコンポジション名に置換する処理を追加
