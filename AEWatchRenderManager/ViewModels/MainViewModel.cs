@@ -14,7 +14,7 @@ using System.Windows.Threading;
 namespace AEWatchRenderManager.ViewModels
 {
     // Date: Sat Apr 18 13:39:29 JST 2026
-    // Version: 1.17.0
+    // Version: 1.17.1
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -275,12 +275,14 @@ namespace AEWatchRenderManager.ViewModels
             try
             {
                 // 新しいコンソールウィンドウで aerender を起動する
-                // UseShellExecute=false + CreateNoWindow=false だと cmd ウィンドウが開かないため
-                // cmd.exe /K で起動してウィンドウを維持する
+                // @problem: スペースを含むパス（Program Files 等）を cmd /K に渡す場合、
+                //           パスを "" で囲むだけでは不十分で cmd がパースに失敗する。
+                // @solution: cmd /K の規則に従い、コマンド全体をさらに "" で囲む。
+                //            /K ""path\aerender.exe" -watchfolder "path""
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/K \"{aerender}\" -watchfolder \"{MonitorPath}\"",
+                    Arguments = $"/K \"\"{aerender}\" -watchfolder \"{MonitorPath}\"\"",
                     UseShellExecute = true
                 });
             }

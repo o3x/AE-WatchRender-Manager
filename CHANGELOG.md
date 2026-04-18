@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.17.1] - Sat Apr 18 13:39:29 JST 2026
+
+- `JoinWatchFolder` のバグ修正: `Program Files` 等スペースを含むパスで aerender が起動できなかった問題を修正
+  - `cmd /K "path" args` → `cmd /K ""path" args"` に修正（cmd.exe のスペース含みパスのクォート規則に対応）
+
 ## [1.17.0] - Sat Apr 18 13:39:29 JST 2026
 
 - **新機能**: aerender で監視フォルダのレンダリングに参加する機能を追加
