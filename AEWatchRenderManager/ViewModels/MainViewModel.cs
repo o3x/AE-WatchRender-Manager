@@ -16,8 +16,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Sat Apr 18 14:02:10 JST 2026
-    // Version: 1.20.0
+    // Date: Sat Apr 18 14:08:25 JST 2026
+    // Version: 1.21.0
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -72,7 +72,7 @@ namespace AEWatchRenderManager.ViewModels
         private string _currentSortColumn = string.Empty;
         private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
 
-        private const string CurrentVersion = "1.20.0";
+        private const string CurrentVersion = "1.21.0";
         private const string GitHubApiLatest = "https://api.github.com/repos/o3x/AE-WatchRender-Manager/releases/latest";
 
         // HttpClient はインスタンスを使い回す（都度 new するとソケット枯渇の原因になる）
@@ -285,24 +285,7 @@ namespace AEWatchRenderManager.ViewModels
                 return;
             }
 
-            var aerender = ResolveAerenderPath();
-            if (aerender == null)
-            {
-                var result = System.Windows.MessageBox.Show(
-                    "aerender.exe が見つかりませんでした。\n\n手動で場所を指定しますか？\n（例: C:\\Program Files\\Adobe\\Adobe After Effects 2024\\Support Files\\aerender.exe）",
-                    "aerender.exe が見つかりません",
-                    System.Windows.MessageBoxButton.YesNo,
-                    System.Windows.MessageBoxImage.Question);
-                if (result == System.Windows.MessageBoxResult.Yes)
-                    BrowseAerenderExe();
-                return;
-            }
-
             var tasks = items.Cast<RenderTaskPair>().ToList();
-
-            // aerender のバージョンを一度だけ取得
-            var aerenderMajor = GetAerenderMajorVersion(aerender);
-
             foreach (var task in tasks)
             {
                 if (string.IsNullOrEmpty(task.AepFilePath) || !File.Exists(task.AepFilePath))
@@ -313,19 +296,42 @@ namespace AEWatchRenderManager.ViewModels
                     continue;
                 }
 
-                // AEP が要求するバージョンと aerender のバージョンを照合
+                // 1. AEP が要求するバージョンに対応する aerender を探す
                 var aepMajor = ReadAepMajorVersion(task.AepFilePath);
-                if (aepMajor > 0 && aerenderMajor > 0 && aerenderMajor < aepMajor)
+                var aerender = aepMajor > 0 ? FindAerenderForVersion(aepMajor) : null;
+
+                // 2. バージョン一致の aerender が見つからない場合はフォールバック
+                if (aerender == null)
                 {
-                    var warn = System.Windows.MessageBox.Show(
-                        $"バージョンの不一致が検出されました。\n\n" +
-                        $"AEP の作成バージョン : {aepMajor}.x\n" +
-                        $"aerender のバージョン: {aerenderMajor}.x\n\n" +
-                        $"aerender がこの AEP ファイルを開けない可能性があります。\n続行しますか？",
-                        $"バージョン不一致 — {task.ProjectName}",
-                        System.Windows.MessageBoxButton.YesNo,
-                        System.Windows.MessageBoxImage.Warning);
-                    if (warn != System.Windows.MessageBoxResult.Yes) continue;
+                    aerender = ResolveAerenderPath();
+                    if (aerender == null)
+                    {
+                        var ask = System.Windows.MessageBox.Show(
+                            "aerender.exe が見つかりませんでした。\n\n手動で場所を指定しますか？\n（例: C:\\Program Files\\Adobe\\Adobe After Effects 2024\\Support Files\\aerender.exe）",
+                            "aerender.exe が見つかりません",
+                            System.Windows.MessageBoxButton.YesNo,
+                            System.Windows.MessageBoxImage.Question);
+                        if (ask == System.Windows.MessageBoxResult.Yes)
+                            BrowseAerenderExe();
+                        return;
+                    }
+
+                    // フォールバック時のみバージョン不一致を警告
+                    if (aepMajor > 0)
+                    {
+                        var aerenderMajor = GetAerenderMajorVersion(aerender);
+                        if (aerenderMajor > 0 && aerenderMajor != aepMajor)
+                        {
+                            var warn = System.Windows.MessageBox.Show(
+                                $"AE {aepMajor}.x 用の aerender.exe が見つかりませんでした。\n\n" +
+                                $"インストール済みの aerender {aerenderMajor}.x で続行しますか？\n" +
+                                $"（AE {aepMajor}.x がインストールされていない可能性があります）",
+                                $"バージョン不一致 — {task.ProjectName}",
+                                System.Windows.MessageBoxButton.YesNo,
+                                System.Windows.MessageBoxImage.Warning);
+                            if (warn != System.Windows.MessageBoxResult.Yes) continue;
+                        }
+                    }
                 }
 
                 try
@@ -351,8 +357,35 @@ namespace AEWatchRenderManager.ViewModels
         }
 
         /// <summary>
+        /// AEP のメジャーバージョンに対応する aerender.exe のパスを返す。
+        /// AEselector の ResolveAePath と同じフォルダ名計算ロジック。
+        /// 該当バージョンがインストールされていない場合は null を返す。
+        /// </summary>
+        private static string? FindAerenderForVersion(int majorVersion)
+        {
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            var adobeDir = Path.Combine(programFiles, "Adobe");
+            if (!Directory.Exists(adobeDir)) return null;
+
+            var folderName = majorVersion switch
+            {
+                >= 22 => $"Adobe After Effects {2000 + majorVersion}",
+                >= 17 => $"Adobe After Effects {2003 + majorVersion}",
+                >= 14 => $"Adobe After Effects CC {2003 + majorVersion}",
+                11    => "Adobe After Effects CS6",
+                10    => "Adobe After Effects CS5",
+                9     => "Adobe After Effects CS4",
+                _     => null
+            };
+            if (folderName == null) return null;
+
+            var aerender = Path.Combine(adobeDir, folderName, "Support Files", "aerender.exe");
+            return File.Exists(aerender) ? aerender : null;
+        }
+
+        /// <summary>
         /// aerender.exe を -version フラグで起動してメジャーバージョン番号を取得する。
-        /// 取得失敗時は 0 を返す。
+        /// フォールバック時のバージョン不一致確認にのみ使用。取得失敗時は 0 を返す。
         /// </summary>
         private static int GetAerenderMajorVersion(string aerenderPath)
         {
@@ -369,7 +402,6 @@ namespace AEWatchRenderManager.ViewModels
                 var output = proc.StandardOutput.ReadToEnd();
                 proc.WaitForExit(5000);
 
-                // "aerender version 23.6.0" などからメジャー番号を抽出
                 var m = Regex.Match(output, @"aerender version (\d+)\.");
                 if (m.Success && int.TryParse(m.Groups[1].Value, out int ver))
                     return ver;
@@ -506,7 +538,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.20.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 1.21.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
