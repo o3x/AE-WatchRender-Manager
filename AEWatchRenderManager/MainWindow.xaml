@@ -39,6 +39,8 @@
                 <MenuItem Header="完了済みを選択" Command="{Binding SelectCompletedCommand}"/>
             </MenuItem>
             <MenuItem Header="ヘルプ(_H)">
+                <MenuItem Header="アップデートを確認..." Command="{Binding CheckForUpdateCommand}"/>
+                <Separator/>
                 <MenuItem Header="バージョン情報" Command="{Binding ShowAboutCommand}"/>
             </MenuItem>
         </Menu>
@@ -186,6 +188,14 @@
                     <TextBlock Text="{Binding ScanIntervalSeconds}"/>
                     <TextBlock Text=" 秒" Foreground="{x:Static SystemColors.GrayTextBrush}"/>
                 </StackPanel>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock Text="{Binding UpdateNotice}" Foreground="DarkOrange" FontWeight="Bold"
+                           Cursor="Hand" ToolTip="クリックしてアップデートを確認">
+                    <TextBlock.InputBindings>
+                        <MouseBinding MouseAction="LeftClick" Command="{Binding CheckForUpdateCommand}"/>
+                    </TextBlock.InputBindings>
+                </TextBlock>
             </StatusBarItem>
         </StatusBar>
     </Grid>

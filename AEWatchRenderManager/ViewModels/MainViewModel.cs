@@ -7,14 +7,16 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Sat Apr 18 13:50:28 JST 2026
-    // Version: 1.18.0
+    // Date: Sat Apr 18 13:55:38 JST 2026
+    // Version: 1.19.0
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -38,6 +40,10 @@ namespace AEWatchRenderManager.ViewModels
         /// <summary>最終スキャン時刻。スキャン完了時のみ更新。StatusBar に表示する。</summary>
         [ObservableProperty]
         private string _lastScanText = "---";
+
+        /// <summary>アップデート通知文字列。新バージョン検出時のみ非空になる。StatusBar に表示する。</summary>
+        [ObservableProperty]
+        private string _updateNotice = string.Empty;
 
         partial void OnIsMonitoringChanged(bool value)
         {
@@ -65,6 +71,20 @@ namespace AEWatchRenderManager.ViewModels
         private string _currentSortColumn = string.Empty;
         private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
 
+        private const string CurrentVersion = "1.19.0";
+        private const string GitHubApiLatest = "https://api.github.com/repos/o3x/AE-WatchRender-Manager/releases/latest";
+
+        // HttpClient はインスタンスを使い回す（都度 new するとソケット枯渇の原因になる）
+        private static readonly HttpClient _httpClient = new()
+        {
+            Timeout = TimeSpan.FromSeconds(10)
+        };
+
+        static MainViewModel()
+        {
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("AEWatchRenderManager");
+        }
+
         private readonly TaskPairManager _taskManager;
         private readonly DispatcherTimer _scanTimer;
         private bool _isScanning = false;
@@ -86,6 +106,11 @@ namespace AEWatchRenderManager.ViewModels
             TasksView = CollectionViewSource.GetDefaultView(_taskManager.Tasks);
 
             UpdateWindowTitle();
+
+            // 起動時にバックグラウンドでバージョン確認（失敗しても無視）
+            _ = CheckForUpdateInternalAsync(silent: true).ContinueWith(
+                t => Debug.WriteLine($"[UpdateChecker] {t.Exception}"),
+                TaskContinuationOptions.OnlyOnFaulted);
         }
 
         private void SaveSettings()
@@ -335,10 +360,69 @@ namespace AEWatchRenderManager.ViewModels
         }
 
         [RelayCommand]
+        private async Task CheckForUpdate()
+        {
+            await CheckForUpdateInternalAsync(silent: false);
+        }
+
+        private async Task CheckForUpdateInternalAsync(bool silent)
+        {
+            try
+            {
+                var json = await _httpClient.GetStringAsync(GitHubApiLatest);
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                var tagName = root.GetProperty("tag_name").GetString() ?? string.Empty;
+                var htmlUrl = root.GetProperty("html_url").GetString() ?? string.Empty;
+                var latestVersion = tagName.TrimStart('v');
+
+                if (Version.TryParse(latestVersion, out var latest) &&
+                    Version.TryParse(CurrentVersion, out var current) &&
+                    latest > current)
+                {
+                    if (silent)
+                    {
+                        UpdateNotice = $"▲ 新しいバージョン {tagName} が利用可能です";
+                    }
+                    else
+                    {
+                        var result = System.Windows.MessageBox.Show(
+                            $"新しいバージョン {tagName} が利用可能です。\nダウンロードページを開きますか？",
+                            "アップデートあり",
+                            System.Windows.MessageBoxButton.YesNo,
+                            System.Windows.MessageBoxImage.Information);
+                        if (result == System.Windows.MessageBoxResult.Yes)
+                            Process.Start(new ProcessStartInfo(htmlUrl) { UseShellExecute = true });
+                    }
+                }
+                else if (!silent)
+                {
+                    System.Windows.MessageBox.Show(
+                        $"最新バージョン（{CurrentVersion}）を使用しています。",
+                        "アップデート確認",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex) when (silent)
+            {
+                Debug.WriteLine($"[UpdateChecker] バージョン確認に失敗（無視）: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    $"バージョン確認に失敗しました:\n{ex.Message}",
+                    "エラー",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+            }
+        }
+
+        [RelayCommand]
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 1.18.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 1.19.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
