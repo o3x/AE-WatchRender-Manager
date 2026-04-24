@@ -5,8 +5,8 @@ using System.IO;
 
 namespace AEWatchRenderManager.Models
 {
-    // Date: Wed Apr 15 11:17:09 JST 2026
-    // Version: 1.16.13
+    // Date: Sat Apr 25 07:42:46 JST 2026
+    // Version: 1.16.14
     public enum RenderStatus
     {
         Queued,    // 待機中
@@ -62,6 +62,10 @@ namespace AEWatchRenderManager.Models
 
         [ObservableProperty]
         private string? _htmlLogFilePath;
+
+        /// <summary>レンダリングに参加している PC 名一覧（machines.htm から取得）。"PC0001, PC0002" 形式。</summary>
+        [ObservableProperty]
+        private string _machineNames = string.Empty;
 
         [ObservableProperty]
         private RenderStatus _status = RenderStatus.Queued;

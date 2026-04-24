@@ -8,8 +8,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Sat Apr 18 09:28:17 JST 2026
-    // Version: 1.16.19
+    // Date: Sat Apr 25 07:42:46 JST 2026
+    // Version: 1.16.20
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -230,8 +230,58 @@ namespace AEWatchRenderManager.Services
             catch (Exception ex) { Debug.WriteLine($"[ParseReportFile] 予期しない例外: {ex}"); }
         }
 
+        /// <summary>
+        /// ({ProjectName}_00_Logs)/machines.htm を読み取り、参加 PC 名一覧を MachineNames に反映する。
+        /// machines.htm は AE が生成する Shift-JIS ファイル。
+        /// <!-- Insert Machines Start --> ～ <!-- Insert Machines End --> 間の &lt;A&gt; タグのテキストを抽出する。
+        /// </summary>
+        private static async Task ParseMachinesAsync(RenderTaskPair task)
+        {
+            try
+            {
+                var logsDir = Path.Combine(task.ProjectFolderPath, $"({task.ProjectName}_00_Logs)");
+                if (!Directory.Exists(logsDir))
+                {
+                    var dirs = Directory.GetDirectories(task.ProjectFolderPath, "*_Logs)");
+                    logsDir = dirs.FirstOrDefault() ?? string.Empty;
+                }
+                if (string.IsNullOrEmpty(logsDir) || !Directory.Exists(logsDir)) return;
+
+                var machinesFile = Path.Combine(logsDir, "machines.htm");
+                if (!File.Exists(machinesFile)) return;
+
+                string content;
+                using (var fs = new FileStream(machinesFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var sr = new StreamReader(fs, System.Text.Encoding.GetEncoding("shift-jis")))
+                {
+                    content = await sr.ReadToEndAsync();
+                }
+
+                var section = Regex.Match(content,
+                    @"<!-- Insert Machines Start -->(.*?)<!-- Insert Machines End -->",
+                    RegexOptions.Singleline | RegexOptions.IgnoreCase);
+                if (!section.Success) return;
+
+                var names = new System.Collections.Generic.List<string>();
+                foreach (Match m in Regex.Matches(section.Groups[1].Value,
+                    @"<A\b[^>]*>\s*(\S+)\s*</A>", RegexOptions.IgnoreCase))
+                {
+                    var name = m.Groups[1].Value.Trim();
+                    if (!string.IsNullOrEmpty(name))
+                        names.Add(name);
+                }
+
+                var joined = string.Join(", ", names);
+                Application.Current.Dispatcher.Invoke(() => task.MachineNames = joined);
+            }
+            catch (IOException ex) { Debug.WriteLine($"[ParseMachines] IO例外: {ex.Message}"); }
+            catch (Exception ex) { Debug.WriteLine($"[ParseMachines] 予期しない例外: {ex}"); }
+        }
+
         private static async Task TryUpdateOutputPathAsync(RenderTaskPair task)
         {
+            await ParseMachinesAsync(task);
+
             try
             {
                 // (Logs)フォルダ内の item*.htm を探す

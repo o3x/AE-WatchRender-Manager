@@ -61,17 +61,41 @@ Models
 | `AerenderPathResolver` | AEP バイナリヘッダー解析・aerender.exe のパス解決（MainViewModel と WatchFolderParticipant の共用） |
 | `WatchFolderParticipant` | キュー済み RCF を検出→排他ロック→aerender 実行→RCF 更新のループ |
 
-### MainViewModel の主要コマンド
+### MainViewModel の主要コマンドと Computed Properties
 
 | コマンド | 説明 |
 |---|---|
-| `ToggleMonitoringCommand` | 監視開始/停止のトグル。`IsMonitoring` の状態で分岐 |
-| `ToggleParticipationCommand` | 参加開始/停止のトグル。`IsParticipating` の状態で分岐 |
-| `ScanNowCommand` | 即時スキャン（F5） |
+| `ToggleMonitoringCommand` | 「▶ 監視を監視」ボタン。`IsMonitoring` の状態で分岐 |
+| `ToggleParticipationCommand` | 「○ ワーカー停止 / ⬤ ワーカー稼働中」インジケーター（ツールバー右端）。`IsParticipating` の状態で分岐 |
+| `ScanNowCommand` | 「今すぐスキャン」ボタン（F5） |
 | `OpenSettingsCommand` | `SettingsDialog` を開き、OK時に設定を反映・保存 |
-| `RenderWithAerenderCommand` | 右クリックメニュー用。選択アイテムを手動で aerender 実行 |
+| `OpenMonitorFolderCommand` | 操作メニュー「監視フォルダを開く」。`CanStartMonitoring` が false の場合は無効 |
+| `RenderWithAerenderCommand` | 右クリックメニュー「aerenderで参加」用。選択アイテムを手動で aerender 実行 |
+
+Computed Properties（`[ObservableProperty]` ではなく `get` のみ、`OnPropertyChanged` を手動で呼ぶ）：
+
+| プロパティ | 条件 | 用途 |
+|---|---|---|
+| `CanStartMonitoring` | `MonitorPath` が空でなく存在するディレクトリ | 「▶ 監視を監視」ボタン・メニュー項目の `IsEnabled` |
+| `HasMoveTarget` | `MoveTargetPath` が空でなく存在するディレクトリ | 「移動先フォルダへ移動」コンテキストメニューの `IsEnabled` |
+| `TaskCount` | `Tasks.Count` | ステータスバー件数表示 |
+
+`MonitorPath`/`MoveTargetPath` の `partial void OnXxxChanged` と `Tasks.CollectionChanged` で `OnPropertyChanged` を呼んで更新する。
 
 `BrowseMonitorFolder`・`BrowseMoveTarget`・`BrowseAerenderExe` は **`SettingsViewModel` 内の RelayCommand** として実装。`MainViewModel` に同名メソッドはあるが RelayCommand ではなく内部用プライベートメソッド。
+
+### ツールバーレイアウト
+
+`DockPanel`（`LastChildFill=False`）で左右に分割：
+
+```
+[ ● 監視を監視中 ]  [今すぐスキャン]               ⬤ ワーカー稼働中
+  ← DockPanel 左側、大きめ(W150/H32) →        ← DockPanel.Dock="Right"、小型ボタン →
+```
+
+- 「▶ 監視を監視」→ 稼働中「● 監視を監視中」: このアプリが監視するのは AE の Watch Folder であり、AE の処理自体ではないため「監視を監視」という名称が正確
+- ワーカーインジケーターは常時クリック可能なトグルボタン（`BorderBrush` が稼働中はオレンジ枠）
+- ステータスバーにワーカー状態バッジは持たない（ツールバーに集約済み）。稼働中の処理ステータステキスト（`ParticipationStatusText`）のみ表示
 
 ### UI スキャンフロー（監視モード）
 
@@ -96,7 +120,7 @@ Models
 | 操作 | 対象 | `KeepAerenderWindowOpen=false` | `KeepAerenderWindowOpen=true` |
 |---|---|---|---|
 | 右クリック「aerenderで参加」 | リスト選択アイテム（手動） | `cmd /C`（消える） | `cmd /K`（残る） |
-| ツールバー「▶ 参加」 | 監視フォルダ内キュー済みジョブ（自動） | `cmd /C`（消える） | `cmd /K`（残る） |
+| ツールバー「○ ワーカー停止」→クリックで起動 | 監視フォルダ内キュー済みジョブ（自動） | `cmd /C`（消える） | `cmd /K`（残る） |
 
 ### aerender のパス解決順（AerenderPathResolver + MainViewModel）
 

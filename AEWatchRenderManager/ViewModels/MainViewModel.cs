@@ -16,8 +16,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Sat Apr 18 19:06:22 JST 2026
-    // Version: 2.1.0
+    // Date: Sat Apr 25 07:42:46 JST 2026
+    // Version: 2.1.1
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -68,8 +68,16 @@ namespace AEWatchRenderManager.ViewModels
             ToggleMonitoringCommand.NotifyCanExecuteChanged();
         }
 
-        partial void OnMonitorPathChanged(string value) => SaveSettings();
-        partial void OnMoveTargetPathChanged(string value) => SaveSettings();
+        partial void OnMonitorPathChanged(string value)
+        {
+            SaveSettings();
+            OnPropertyChanged(nameof(CanStartMonitoring));
+        }
+        partial void OnMoveTargetPathChanged(string value)
+        {
+            SaveSettings();
+            OnPropertyChanged(nameof(HasMoveTarget));
+        }
         partial void OnAerenderPathChanged(string value) => SaveSettings();
         partial void OnKeepAerenderWindowOpenChanged(bool value) => SaveSettings();
         partial void OnScanIntervalSecondsChanged(int value)
@@ -86,10 +94,19 @@ namespace AEWatchRenderManager.ViewModels
         /// <summary>ソート対応ビュー。ListView はこちらにバインドする。</summary>
         public ICollectionView TasksView { get; }
 
+        /// <summary>タスク件数。ステータスバーに表示する。</summary>
+        public int TaskCount => _taskManager.Tasks.Count;
+
+        /// <summary>監視フォルダが有効なパスかどうか。監視ボタンの有効化条件。</summary>
+        public bool CanStartMonitoring => !string.IsNullOrEmpty(MonitorPath) && Directory.Exists(MonitorPath);
+
+        /// <summary>移動先フォルダが設定されているか。コンテキストメニューの有効化条件。</summary>
+        public bool HasMoveTarget => !string.IsNullOrEmpty(MoveTargetPath) && Directory.Exists(MoveTargetPath);
+
         private string _currentSortColumn = string.Empty;
         private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
 
-        private const string CurrentVersion = "2.1.0";
+        private const string CurrentVersion = "2.2.0";
         private const string GitHubApiLatest = "https://api.github.com/repos/o3x/AE-WatchRender-Manager/releases/latest";
 
         // HttpClient はインスタンスを使い回す（都度 new するとソケット枯渇の原因になる）
@@ -124,6 +141,7 @@ namespace AEWatchRenderManager.ViewModels
             _scanTimer.Tick += async (s, e) => await ScanMonitorFolderAsync();
 
             TasksView = CollectionViewSource.GetDefaultView(_taskManager.Tasks);
+            _taskManager.Tasks.CollectionChanged += (_, _) => OnPropertyChanged(nameof(TaskCount));
 
             UpdateWindowTitle();
 
@@ -487,7 +505,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 2.1.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                "AE WatchRender Manager\nVersion 2.2.0\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
@@ -685,6 +703,21 @@ namespace AEWatchRenderManager.ViewModels
             }
 
             TriggerImmediateScan();
+        }
+
+        [RelayCommand]
+        private void OpenMonitorFolder()
+        {
+            if (string.IsNullOrEmpty(MonitorPath) || !Directory.Exists(MonitorPath)) return;
+            try
+            {
+                Process.Start(new ProcessStartInfo(MonitorPath) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"フォルダを開けませんでした: {ex.Message}", "エラー",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
         }
 
         [RelayCommand]

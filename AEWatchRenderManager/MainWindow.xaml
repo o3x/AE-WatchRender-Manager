@@ -8,6 +8,7 @@
         xmlns:models="clr-namespace:AEWatchRenderManager.Models"
         mc:Ignorable="d"
         Title="{Binding WindowTitle}" Height="600" Width="900"
+        MinWidth="600" MinHeight="400"
         d:DataContext="{d:DesignInstance vm:MainViewModel}">
     <Window.DataContext>
         <vm:MainViewModel />
@@ -31,6 +32,9 @@
             <MenuItem Header="操作(_T)">
                 <MenuItem Header="今すぐスキャン (F5)" Command="{Binding ScanNowCommand}"/>
                 <Separator/>
+                <MenuItem Header="監視フォルダを開く" Command="{Binding OpenMonitorFolderCommand}"
+                          IsEnabled="{Binding CanStartMonitoring}"/>
+                <Separator/>
                 <MenuItem Header="すべて選択" Command="{Binding SelectAllCommand}"/>
                 <MenuItem Header="完了済みを選択" Command="{Binding SelectCompletedCommand}"/>
             </MenuItem>
@@ -45,44 +49,35 @@
         <Border Grid.Row="1" Padding="6,4"
                 BorderBrush="{x:Static SystemColors.ControlDarkBrush}"
                 BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal">
+            <DockPanel LastChildFill="False">
 
-                <!-- 監視トグル: 状態に応じてテキスト・色が変わる -->
-                <Button Command="{Binding ToggleMonitoringCommand}" Width="110" Height="28" Margin="0,0,4,0"
-                        ToolTip="監視フォルダのスキャンを開始/停止します">
-                    <TextBlock>
+                <!-- 右端: ワーカーインジケーター（小さめ・クリック可） -->
+                <Button DockPanel.Dock="Right"
+                        Command="{Binding ToggleParticipationCommand}"
+                        BorderThickness="1" Padding="8,4" Height="28" Margin="4,0,0,0"
+                        VerticalAlignment="Center"
+                        ToolTip="クリックしてワーカーを起動/停止します">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderBrush" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsParticipating}" Value="True">
+                                    <Setter Property="BorderBrush" Value="DarkOrange"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <TextBlock FontSize="11">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
-                                <Setter Property="Text" Value="▶  監視"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
-                                        <Setter Property="Text" Value="■  監視中"/>
-                                        <Setter Property="Foreground" Value="Green"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Button>
-
-                <!-- スキャン -->
-                <Button Content="SCAN NOW" Command="{Binding ScanNowCommand}"
-                        Width="90" Height="28" FontWeight="Bold" Margin="0,0,16,0"/>
-
-                <!-- セパレータ -->
-                <Rectangle Width="1" Height="20" Fill="{x:Static SystemColors.ControlDarkBrush}" Margin="0,0,16,0"/>
-
-                <!-- 参加トグル: 状態に応じてテキスト・色が変わる -->
-                <Button Command="{Binding ToggleParticipationCommand}" Width="110" Height="28"
-                        ToolTip="監視フォルダ内のキュー済みジョブを aerender で自動レンダリングします">
-                    <TextBlock>
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Text" Value="▶  参加"/>
+                                <Setter Property="Text" Value="○  ワーカー停止"/>
+                                <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsParticipating}" Value="True">
-                                        <Setter Property="Text" Value="■  参加中"/>
+                                        <Setter Property="Text" Value="⬤  ワーカー稼働中"/>
                                         <Setter Property="Foreground" Value="DarkOrange"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -90,11 +85,37 @@
                     </TextBlock>
                 </Button>
 
-            </StackPanel>
+                <!-- 左: メイン操作ボタン群 -->
+                <!-- 監視トグル: 大きめ・主役ボタン -->
+                <Button Command="{Binding ToggleMonitoringCommand}" Width="150" Height="32" Margin="0,0,6,0"
+                        IsEnabled="{Binding CanStartMonitoring}"
+                        ToolTip="監視フォルダのスキャンを開始/停止します">
+                    <TextBlock FontSize="13">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="▶  監視を監視"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
+                                        <Setter Property="Text" Value="●  監視を監視中"/>
+                                        <Setter Property="Foreground" Value="Green"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Button>
+
+                <!-- 今すぐスキャン -->
+                <Button Content="今すぐスキャン" Command="{Binding ScanNowCommand}"
+                        Height="28" Padding="10,0" VerticalAlignment="Center"/>
+
+            </DockPanel>
         </Border>
 
         <!-- タスクリスト -->
-        <ListView Grid.Row="2" ItemsSource="{Binding TasksView}" x:Name="taskListView" SelectionMode="Extended" Margin="10,10,10,4"
+        <Grid Grid.Row="2">
+        <ListView ItemsSource="{Binding TasksView}" x:Name="taskListView" SelectionMode="Extended" Margin="10,10,10,4"
                   MouseDoubleClick="TaskListView_MouseDoubleClick">
             <ListView.InputBindings>
                 <KeyBinding Key="Delete" Command="{Binding DeleteTaskCommand}" CommandParameter="{Binding SelectedItems, ElementName=taskListView}"/>
@@ -133,7 +154,9 @@
                               CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                               IsEnabled="{Binding PlacementTarget.SelectedItem.HasOutputPath, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <Separator/>
-                    <MenuItem Header="移動先フォルダへ移動" Command="{Binding MoveTaskCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <MenuItem Header="移動先フォルダへ移動" Command="{Binding MoveTaskCommand}"
+                              CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                              IsEnabled="{Binding PlacementTarget.DataContext.HasMoveTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <Separator/>
                     <MenuItem Header="ごみ箱へ削除" Command="{Binding DeleteTaskCommand}" CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     <Separator/>
@@ -152,6 +175,9 @@
                     </GridViewColumn>
                     <GridViewColumn DisplayMemberBinding="{Binding LastUpdateTime, StringFormat=MM/dd HH:mm:ss}" Width="120">
                         <GridViewColumnHeader Content="最終更新" Tag="LastUpdateTime" Click="ColumnHeader_Click"/>
+                    </GridViewColumn>
+                    <GridViewColumn DisplayMemberBinding="{Binding MachineNames}" Width="160">
+                        <GridViewColumnHeader Content="参加 PC" Tag="MachineNames" Click="ColumnHeader_Click"/>
                     </GridViewColumn>
                     <GridViewColumn Width="350">
                         <GridViewColumnHeader Content="パス" Tag="DisplayPath" Click="ColumnHeader_Click"/>
@@ -176,6 +202,25 @@
                 </GridView>
             </ListView.View>
         </ListView>
+        <!-- 空リスト時のヒント -->
+        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Foreground="{x:Static SystemColors.GrayTextBrush}" FontSize="13"
+                   IsHitTestVisible="False">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding TaskCount}" Value="0">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+            <Run Text="AEP をここにドロップするか、監視フォルダを設定して "/>
+            <Run Text="▶ 監視を監視" FontWeight="Bold"/>
+            <Run Text=" を押してください"/>
+        </TextBlock>
+        </Grid>
 
         <!-- ステータスバー: 監視状態 / 監視パス / 最終スキャン / サイクル -->
         <StatusBar Grid.Row="3">
@@ -187,7 +232,7 @@
                             <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
-                                    <Setter Property="Text" Value="● 監視中"/>
+                                    <Setter Property="Text" Value="● 監視を監視中"/>
                                     <Setter Property="Foreground" Value="Green"/>
                                 </DataTrigger>
                             </Style.Triggers>
@@ -228,24 +273,16 @@
             </StatusBarItem>
             <Separator/>
             <StatusBarItem>
-                <TextBlock>
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Text" Value="○ 未参加"/>
-                            <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsParticipating}" Value="True">
-                                    <Setter Property="Text" Value="◎ 参加中"/>
-                                    <Setter Property="Foreground" Value="DarkOrange"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding TaskCount}"/>
+                    <TextBlock Text=" 件" Foreground="{x:Static SystemColors.GrayTextBrush}"/>
+                </StackPanel>
             </StatusBarItem>
+            <!-- ワーカー稼働中の処理ステータス（停止中は非表示） -->
             <StatusBarItem>
-                <TextBlock Text="{Binding ParticipationStatusText}" MaxWidth="300"
-                           TextTrimming="CharacterEllipsis" ToolTip="{Binding ParticipationStatusText}">
+                <TextBlock Text="{Binding ParticipationStatusText}" MaxWidth="250"
+                           TextTrimming="CharacterEllipsis" ToolTip="{Binding ParticipationStatusText}"
+                           Foreground="DarkOrange">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Style.Triggers>
