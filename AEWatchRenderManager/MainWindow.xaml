@@ -71,7 +71,7 @@
                     <TextBlock FontSize="11">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
-                                <Setter Property="Text" Value="○  ワーカー停止"/>
+                                <Setter Property="Text" Value="○  ワーカー停止中"/>
                                 <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsParticipating}" Value="True">

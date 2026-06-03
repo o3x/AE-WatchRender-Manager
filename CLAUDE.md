@@ -19,6 +19,8 @@ dotnet publish AEWatchRenderManager/AEWatchRenderManager.csproj -p:PublishProfil
 # 出力先: AEWatchRenderManager/bin/Release/net8.0-windows/win-x64/publish/
 ```
 
+テストプロジェクトはない。動作確認はすべて手動。
+
 リリースフロー:
 1. `CHANGELOG.md` 更新
 2. 変更したソースファイル先頭の日付・バージョン更新（**`ShowAbout` 内のバージョン文字列も忘れずに更新**）
@@ -57,16 +59,18 @@ Models
 | `TaskPairManager` | サブフォルダをスキャンして `RenderTaskPair` の `ObservableCollection` を同期 |
 | `StatusAnalyzer` | `_RCF.txt` と HTML レポートを非同期パースし `RenderStatus` を決定 |
 | `SettingsService` | `%LocalAppData%\AEWatchRenderManager\config.json` に設定を永続化 |
-| `RenderTaskPair` | 1ジョブの状態（パス・ステータス・表示色）を保持する Observable モデル |
+| `RenderTaskPair` | 1ジョブの状態（パス・ステータス・表示色・参加PCリスト）を保持する Observable モデル |
 | `AerenderPathResolver` | AEP バイナリヘッダー解析・aerender.exe のパス解決（MainViewModel と WatchFolderParticipant の共用） |
 | `WatchFolderParticipant` | キュー済み RCF を検出→排他ロック→aerender 実行→RCF 更新のループ |
+
+`Views/ScanCycleDialog.xaml`（.cs）は未使用のレガシーダイアログ（スキャン間隔設定は SettingsDialog に統合済み）。改修不要。
 
 ### MainViewModel の主要コマンドと Computed Properties
 
 | コマンド | 説明 |
 |---|---|
 | `ToggleMonitoringCommand` | 「▶ 監視を監視」ボタン。`IsMonitoring` の状態で分岐 |
-| `ToggleParticipationCommand` | 「○ ワーカー停止 / ⬤ ワーカー稼働中」インジケーター（ツールバー右端）。`IsParticipating` の状態で分岐 |
+| `ToggleParticipationCommand` | 「○ ワーカー停止中 / ⬤ ワーカー稼働中」インジケーター（ツールバー右端）。`IsParticipating` の状態で分岐 |
 | `ScanNowCommand` | 「今すぐスキャン」ボタン（F5） |
 | `OpenSettingsCommand` | `SettingsDialog` を開き、OK時に設定を反映・保存 |
 | `OpenMonitorFolderCommand` | 操作メニュー「監視フォルダを開く」。`CanStartMonitoring` が false の場合は無効 |
@@ -117,10 +121,18 @@ Computed Properties（`[ObservableProperty]` ではなく `get` のみ、`OnProp
 
 両モードとも **`ProcessWindowStyle.Minimized`** で最小化起動（作業の邪魔にならない）。`KeepAerenderWindowOpen` 設定で `/C`（完了後自動クローズ、デフォルト）と `/K`（完了後ウィンドウを残す）を切り替える。セットアップ > 設定... から変更可能。
 
+aerender の実行コマンド形式（`WatchFolderParticipant` が `cmd.exe` 経由で起動）：
+
+```
+aerender.exe -project "監視フォルダのパス" -RStemplate "テンプレート名" -s 開始フレーム -e 終了フレーム -output "出力先パス"
+```
+
+実際は AE の Watch Folder モードのため `-project` に監視フォルダパス・`-RStemplate` に "Multi-Machine Settings" を指定し、AE側がRCFから残りのパラメータを解決する。aerender のオプション仕様は `Specs/AE_WatchFolder_Specs.md` を参照のこと。
+
 | 操作 | 対象 | `KeepAerenderWindowOpen=false` | `KeepAerenderWindowOpen=true` |
 |---|---|---|---|
 | 右クリック「aerenderで参加」 | リスト選択アイテム（手動） | `cmd /C`（消える） | `cmd /K`（残る） |
-| ツールバー「○ ワーカー停止」→クリックで起動 | 監視フォルダ内キュー済みジョブ（自動） | `cmd /C`（消える） | `cmd /K`（残る） |
+| ツールバー「○ ワーカー停止中」→クリックで起動 | 監視フォルダ内キュー済みジョブ（自動） | `cmd /C`（消える） | `cmd /K`（残る） |
 
 ### aerender のパス解決順（AerenderPathResolver + MainViewModel）
 
@@ -128,6 +140,18 @@ Computed Properties（`[ObservableProperty]` ではなく `get` のみ、`OnProp
 2. 対応バージョンの AE インストールフォルダの aerender を探す（`FindForVersion`）
 3. 見つからない場合 → ユーザー指定フォールバックパス（設定ダイアログの「フォールバックパス」）
 4. それも無い場合 → インストール済み最新版（`FindNewest`）
+
+## 参照ドキュメント
+
+`Specs/` ディレクトリに逆解析リファレンスがある：
+
+| ファイル | 内容 |
+|---|---|
+| `AE_WatchFolder_Specs.md` | AE Watch Folder の公式仕様（aerender オプション・フォルダ構成） |
+| `RCF_HTML_etc.md` | RCF / HTML レポート / ロックファイルの逆解析済み仕様 |
+| `AEWatch/` | 実物の監視フォルダサンプル（RCF・ログ・レポートの実例） |
+
+`StatusAnalyzer`・`WatchFolderParticipant` を改修する際はこれらを第一次リファレンスにすること。
 
 ## AE 非公開仕様（最重要）
 
@@ -199,6 +223,24 @@ AE が生成する `({ProjectName}_00_Logs)/item*.htm` から出力先フォル�
 
 **`[compName]` プレースホルダー**: AEの特定バージョンはパス内の `[compName]` をコンポ名で展開せずそのまま書き出す。`<H3>` タグ内の `「コンポ名」`（日本語AE）または `"CompName"`（英語AE）から取得して置換する（`ResolveCompName` メソッド）。`<H3>` 内を先に切り出してから引用符を検索しないと、`<meta http-equiv="Content-Type">` の `"Content-Type"` が誤マッチする。
 
+### machines.htm のパース（参加 PC リスト）
+
+AE が生成する `({ProjectName}_00_Logs)/machines.htm` からレンダリング参加 PC 名を取得する。ファイルは **Shift-JIS**。
+
+- `<!-- Insert Machines Start -->` ～ `<!-- Insert Machines End -->` セクション内の `<A>` タグから PC 名を抽出
+- 取得した名前を `", "` 結合して `RenderTaskPair.MachineNames` に格納し、「参加 PC」列に表示する
+- `StatusAnalyzer.ParseMachinesAsync`（private static async）で処理し、`TryUpdateOutputPathAsync` の**先頭**で呼び出す
+  - これにより Completed / Failed / Suspended / Rendering の全ブランチがカバーされる（Queued / Pending はまだ参加 PC が存在しないため対象外）
+
+```html
+<!-- Insert Machines Start -->
+<A>PC0001</A>
+<A>PC0002</A>
+<!-- Insert Machines End -->
+```
+
+Logs フォルダ名は設定によって変わりうるため、まず `({ProjectName}_00_Logs)` を試し、存在しない場合は `Directory.GetDirectories` で `*_Logs)` パターンの最初のフォルダにフォールバックする。
+
 ### AEP バイナリヘッダー解析（`AerenderPathResolver.ReadAepMajorVersion`）
 
 AEselector プロジェクトと同じロジック。48バイト読んでマジックナンバーとバージョンを取得：
@@ -219,7 +261,7 @@ AEが生成するファイルは**すべて Shift-JIS**。`StreamReader` にエ�
 using var sr = new StreamReader(fs, System.Text.Encoding.GetEncoding("shift-jis"));
 ```
 
-対象: `item*.htm`、`*_レポート.txt`、html_name で指定されたHTMLレポート
+対象: `item*.htm`、`*_レポート.txt`、html_name で指定されたHTMLレポート、`machines.htm`
 
 ## Tech Stack & Engine Rules
 
