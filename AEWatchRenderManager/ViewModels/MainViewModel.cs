@@ -694,7 +694,11 @@ namespace AEWatchRenderManager.ViewModels
                         var htmlName = ""; // HTMLは生成させない
                         
                         var txtContent = $"レポート作成日 : \r\n\t{DateTime.Now:yyyy/MM/dd\tH:mm:ss}\r\n\r\nプロジェクト名 : {Path.GetFileName(file)}\r\n\r\n収集されたソースファイル先 : \r\n\t{targetDir}\r\n\r\n収集されたソースファイル : なし\r\n\r\n収集されたコンポジション :  \r\n\tコンポ 1\r\n\t\r\n収集されたファイルの数 :  0\r\n\r\n収集されたファイルのサイズ :  0 KB\r\n\r\nレンダリングプラグイン:\r\n\tクラシック3D\r\n\t\r\n";
-                        File.WriteAllText(txtPath, txtContent);
+                        // @problem: 読み手のParseReportFileAsync（StatusAnalyzer）はレポートtxtを
+                        //           Shift-JIS前提でパースするため、UTF-8で書くと日本語見出し
+                        //           「プロジェクト名 :」が文字化けし正規表現マッチが永遠に失敗する。
+                        // @solution: 書き込み側もShift-JISに合わせる。
+                        File.WriteAllText(txtPath, txtContent, System.Text.Encoding.GetEncoding("shift-jis"));
                         // @problem: "After Effects Render Control File"（バージョン文字列なし）では
                         //           AEの監視フォルダーがRCFを正しく認識しない。
                         // @solution: "After Effects 13.2v1 Render Control File" という固有の
