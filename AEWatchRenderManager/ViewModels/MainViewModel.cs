@@ -549,6 +549,14 @@ namespace AEWatchRenderManager.ViewModels
 
                 LastScanText = DateTime.Now.ToString("HH:mm:ss");
             }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
+            {
+                // @problem: 監視フォルダはネットワークドライブ上にあることが多く、共有切断中の
+                //           スキャンで例外が飛ぶと async void の Tick ハンドラー経由でアプリごと落ちる。
+                // @solution: I/O系例外はスキャン1回分の失敗として握り、ステータスバーに表示して次周期に委ねる。
+                Debug.WriteLine($"[ScanMonitorFolder] スキャン失敗（次周期で再試行）: {ex.Message}");
+                LastScanText = $"スキャン失敗 {DateTime.Now:HH:mm:ss}";
+            }
             finally
             {
                 _isScanning = false;
