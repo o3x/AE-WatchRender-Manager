@@ -1,6 +1,6 @@
 // WatchFolderParticipant.cs
-// Version: 2.0.3
-// Updated: Sat Apr 18 19:06:22 JST 2026
+// Version: 2.0.4
+// Updated: Mon Aug 10 11:46:16 JST 2026
 
 using System;
 using System.Diagnostics;

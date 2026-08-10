@@ -106,7 +106,7 @@ namespace AEWatchRenderManager.ViewModels
         private string _currentSortColumn = string.Empty;
         private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
 
-        private const string CurrentVersion = "2.2.1";
+        private const string CurrentVersion = "2.3.0";
         private const string GitHubApiLatest = "https://api.github.com/repos/o3x/AE-WatchRender-Manager/releases/latest";
 
         // HttpClient はインスタンスを使い回す（都度 new するとソケット枯渇の原因になる）
