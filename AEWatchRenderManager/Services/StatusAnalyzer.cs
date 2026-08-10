@@ -30,6 +30,8 @@ namespace AEWatchRenderManager.Services
                     rcfContent = await sr.ReadToEndAsync();
                 }
 
+                task.LastUpdateTime = File.GetLastWriteTime(task.RcfFilePath);
+
                 // initフラグの読み取り
                 var initMatch = Regex.Match(rcfContent, @"init=(\d+)");
                 if (initMatch.Success && int.TryParse(initMatch.Groups[1].Value, out int initVal))
