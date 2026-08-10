@@ -23,7 +23,7 @@ dotnet publish AEWatchRenderManager/AEWatchRenderManager.csproj -p:PublishProfil
 
 リリースフロー:
 1. `CHANGELOG.md` 更新
-2. 変更したソースファイル先頭の日付・バージョン更新（**`ShowAbout` 内のバージョン文字列も忘れずに更新**）
+2. 変更したソースファイル先頭の日付・バージョン更新（**`ShowAbout` は `CurrentVersion` 定数を参照するため定数のみ更新すればよい**）
 3. `dotnet publish`
 4. `git commit && git push`
 5. `gh release create vX.Y.Z "...publish/AEWatchRenderManager.exe" --title "vX.Y.Z" --notes "..."`
@@ -62,8 +62,6 @@ Models
 | `RenderTaskPair` | 1ジョブの状態（パス・ステータス・表示色・参加PCリスト）を保持する Observable モデル |
 | `AerenderPathResolver` | AEP バイナリヘッダー解析・aerender.exe のパス解決（MainViewModel と WatchFolderParticipant の共用） |
 | `WatchFolderParticipant` | キュー済み RCF を検出→排他ロック→aerender 実行→RCF 更新のループ |
-
-`Views/ScanCycleDialog.xaml`（.cs）は未使用のレガシーダイアログ（スキャン間隔設定は SettingsDialog に統合済み）。改修不要。
 
 ### MainViewModel の主要コマンドと Computed Properties
 
@@ -301,7 +299,7 @@ AEの非公開仕様やWPF特有の問題に対処した箇所には必ず記述
 作業完了後は以下を必ず実施すること：
 1. `CHANGELOG.md` を日本語で更新
 2. 変更したソースファイル先頭の日付・バージョンを更新
-3. `ShowAbout` 内のバージョン文字列と `CurrentVersion` 定数（`MainViewModel.cs`）を更新
+3. `CurrentVersion` 定数（`MainViewModel.cs`）のみ更新（`ShowAbout` はこの定数を参照するため）
 4. 日時形式: `Wed Dec 03 11:05:00 JST 2025`（曜日 月 日 時:分:秒 JST 年）
    - 日時は必ず以下のコマンドで取得すること（ロケールを英語に固定しないと曜日・月名が日本語になるため）
    ```powershell

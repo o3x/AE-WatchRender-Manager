@@ -16,8 +16,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Sat Apr 25 07:42:46 JST 2026
-    // Version: 2.1.1
+    // Date: Mon Aug 10 11:46:16 JST 2026
+    // Version: 2.3.0
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -504,7 +504,7 @@ namespace AEWatchRenderManager.ViewModels
         private void ShowAbout()
         {
             System.Windows.MessageBox.Show(
-                "AE WatchRender Manager\nVersion 2.2.1\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
+                $"AE WatchRender Manager\nVersion {CurrentVersion}\n\nAfter Effectsの監視フォルダーを管理するためのツールです。\n\nCopyright © 2026 OHYAMA Yoshihisa\nLicensed under the Apache License, Version 2.0",
                 "バージョン情報",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
