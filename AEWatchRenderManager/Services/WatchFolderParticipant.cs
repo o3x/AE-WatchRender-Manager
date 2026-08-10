@@ -24,17 +24,15 @@ namespace AEWatchRenderManager.Services
         public bool IsRunning => _cts != null && !_cts.IsCancellationRequested;
 
         private CancellationTokenSource? _cts;
-        private bool _keepWindowOpen;
         private static readonly string MachineName = Environment.MachineName;
         private static readonly Regex InitPattern = new(@"init=(\d+)", RegexOptions.Compiled);
 
         // ロックファイルがこの時間より古ければ停止したマシンのロックとみなして無視する
         private const int StaleLockMinutes = 30;
 
-        public void Start(string monitorPath, string? userAerenderPath, bool keepWindowOpen = false, int pollIntervalSeconds = 10)
+        public void Start(string monitorPath, string? userAerenderPath, int pollIntervalSeconds = 10)
         {
             if (_cts != null) return;
-            _keepWindowOpen = keepWindowOpen;
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
             _ = Task.Run(() => RunLoopAsync(monitorPath, userAerenderPath, pollIntervalSeconds, ct), ct);
@@ -224,8 +222,13 @@ namespace AEWatchRenderManager.Services
                 UpdateRcfStatus(rcfPath, content, renderingLine, claimInit: true);
                 ReportStatus($"レンダリング中: {projectName}");
 
-                // aerender 実行（最小化で起動。_keepWindowOpen=true なら完了後もウィンドウを残す）
-                bool success = await RunAerenderAsync(aerenderPath, aepPath, _keepWindowOpen, ct);
+                // aerender 実行（最小化で起動）
+                // @problem: /K（ウィンドウを残す）で起動すると WaitForExitAsync がユーザーの
+                //           手動クローズまで返らずワーカーが機能停止する。手動クローズ時の cmd
+                //           の ExitCode（通常0）で成否判定するため aerender の失敗も見逃す。
+                // @solution: ワーカー自動参加では常に /C で起動する。/K は右クリック手動実行
+                //            （fire-and-forget、MainViewModel.RenderWithAerender）専用とする。
+                bool success = await RunAerenderAsync(aerenderPath, aepPath, ct);
 
                 // RCF を完了/エラー状態に更新
                 var finalContent = ReadRcfContent(rcfPath) ?? content;
@@ -253,12 +256,11 @@ namespace AEWatchRenderManager.Services
         // ─────────────────────────────────────────────────────────
 
         private static async Task<bool> RunAerenderAsync(
-            string aerenderPath, string aepPath, bool keepWindowOpen, CancellationToken ct)
+            string aerenderPath, string aepPath, CancellationToken ct)
         {
             // 最小化で起動して作業の邪魔にならないようにする。
-            // keepWindowOpen=false → /C（完了後にウィンドウが自動で閉じる）
-            // keepWindowOpen=true  → /K（完了後もウィンドウが残り出力を確認できる）
-            var cmdSwitch = keepWindowOpen ? "/K" : "/C";
+            // ワーカー自動参加は常に /C（完了後にウィンドウが自動で閉じる）で起動する。
+            const string cmdSwitch = "/C";
             using var proc = new Process
             {
                 StartInfo = new ProcessStartInfo

@@ -71,7 +71,7 @@
                     <Button Grid.Column="1" Content="参照..."
                             Command="{Binding BrowseAerenderExeCommand}" Height="24"/>
                 </Grid>
-                <CheckBox Content="aerender ウィンドウを残す（完了後も出力を確認できます）"
+                <CheckBox Content="aerender ウィンドウを残す（完了後も出力を確認できます。右クリックの手動実行のみ有効。ワーカー自動参加では常に自動クローズ）"
                           IsChecked="{Binding KeepAerenderWindowOpen}"/>
             </StackPanel>
         </GroupBox>

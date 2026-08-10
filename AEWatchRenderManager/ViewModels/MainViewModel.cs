@@ -408,7 +408,6 @@ namespace AEWatchRenderManager.ViewModels
                 _participant.Start(
                     MonitorPath,
                     string.IsNullOrEmpty(AerenderPath) ? null : AerenderPath,
-                    keepWindowOpen: KeepAerenderWindowOpen,
                     pollIntervalSeconds: ScanIntervalSeconds > 0 ? ScanIntervalSeconds : 10);
 
                 IsParticipating = true;

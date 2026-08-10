@@ -132,7 +132,7 @@ aerender.exe -project "監視フォルダのパス" -RStemplate "テンプレー
 | 操作 | 対象 | `KeepAerenderWindowOpen=false` | `KeepAerenderWindowOpen=true` |
 |---|---|---|---|
 | 右クリック「aerenderで参加」 | リスト選択アイテム（手動） | `cmd /C`（消える） | `cmd /K`（残る） |
-| ツールバー「○ ワーカー停止中」→クリックで起動 | 監視フォルダ内キュー済みジョブ（自動） | `cmd /C`（消える） | `cmd /K`（残る） |
+| ツールバー「○ ワーカー停止中」→クリックで起動 | 監視フォルダ内キュー済みジョブ（自動） | `cmd /C`（消える） | 常に `/C`（設定に関わらず固定。/K だと `WaitForExitAsync` がユーザーのウィンドウクローズまで返らずワーカーが機能停止するため） |
 
 ### aerender のパス解決順（AerenderPathResolver + MainViewModel）
 
