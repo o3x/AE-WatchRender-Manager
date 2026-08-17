@@ -4,6 +4,8 @@
 
 **Windows 実機確認待ち**（① ネットワーク切断中のスキャンでクラッシュしないこと ② `/K` 設定のままワーカー起動してキューが進むこと）。
 
+**2026-08-17 追記**: インストール先（`C:\Program Files\tools\AE WatchRender Manager\`）の exe が起動しなくなっていた問題を修正。原因はコード側ではなく配置ミス — v2.3.0 公開時に単一ファイル自己完結ビルド（`dotnet publish -p:PublishProfile=win-x64` の出力、約162MB）ではなく、`dotnet build` の出力フォルダから依存 dll・deps.json・runtimeconfig.json を伴わない apphost 単体（約266KB）を誤ってコピーしていたため、起動直後に `LibHostAppRootFailure`（終了コード `0x8000809A`）で即終了していた。改めて正しいプロファイルで publish し、正しい単一 exe で置き換えて起動を確認済み。①②の機能面の実機確認はまだ残っている。
+
 - **安定性**: `ScanMonitorFolderAsync` にI/O例外ガードを追加。監視フォルダがネットワークドライブで共有切断中にスキャンすると未処理例外でアプリごと落ちていた問題を修正
 - **変更（挙動）**: ワーカー自動参加は `KeepAerenderWindowOpen` 設定に関わらず常に `/C`（自動クローズ）で起動するよう固定。`/K` のままだと `WaitForExitAsync` が手動ウィンドウクローズまで返らずキュー処理が停止し、cmd の ExitCode で誤って成功と判定される不具合があった。`/K` は右クリック手動実行専用として維持
 - **修正**: DropFiles が生成するレポート txt の文字コードを UTF-8 から Shift-JIS に修正（読み手の `ParseReportFileAsync` との不整合で日本語見出しがパースできなかった問題）
