@@ -1,6 +1,6 @@
 // AerenderPathResolver.cs
-// Version: 2.0.0
-// Updated: Sat Apr 18 19:06:22 JST 2026
+// Version: 2.0.1
+// Updated: Tue Oct 27 17:42:09 JST 2026
 
 using System;
 using System.Diagnostics;
@@ -19,6 +19,15 @@ namespace AEWatchRenderManager.Services
     {
         private static readonly string AdobeDir =
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Adobe");
+
+        /// <summary>
+        /// ユーザー指定パスが実在する aerender.exe かを検証する。
+        /// 設定ファイルが書き換えられても、任意の exe を実行しないための確認。
+        /// </summary>
+        public static bool IsAerenderExe(string? path) =>
+            !string.IsNullOrEmpty(path)
+            && string.Equals(Path.GetFileName(path), "aerender.exe", StringComparison.OrdinalIgnoreCase)
+            && File.Exists(path);
 
         /// <summary>
         /// AEP メジャーバージョンに対応する aerender.exe のパスを返す。

@@ -1,6 +1,6 @@
 // WatchFolderParticipant.cs
-// Version: 2.0.4
-// Updated: Mon Aug 10 11:46:16 JST 2026
+// Version: 2.0.5
+// Updated: Tue Oct 27 17:42:09 JST 2026
 
 using System;
 using System.Diagnostics;
@@ -142,6 +142,29 @@ namespace AEWatchRenderManager.Services
             return false;
         }
 
+        /// <summary>自分より優先される（マシン名が辞書順で小さい）別マシンの有効なロックがあるか。</summary>
+        private static bool HasPriorityRival(string projectDir, string ownLockFile)
+        {
+            try
+            {
+                foreach (var lf in Directory.GetFiles(projectDir, "*_RCF.lock"))
+                {
+                    if (string.Equals(lf, ownLockFile, StringComparison.OrdinalIgnoreCase)) continue;
+                    if ((DateTime.Now - File.GetLastWriteTime(lf)).TotalMinutes >= StaleLockMinutes) continue;
+
+                    // マシン名にも「_」を使えるため、ファイル名ではなくロック本文の1行目から読む
+                    var rivalName = (ReadRcfContent(lf) ?? string.Empty).Split('\n')[0].Trim();
+                    if (rivalName.Length > 0 &&
+                        string.Compare(rivalName, MachineName, StringComparison.OrdinalIgnoreCase) < 0) return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WatchFolderParticipant.HasPriorityRival] {ex.Message}");
+            }
+            return false;
+        }
+
         private static string GetLockFilePath(string rcfPath)
         {
             var dir = Path.GetDirectoryName(rcfPath)!;
@@ -185,6 +208,16 @@ namespace AEWatchRenderManager.Services
                 // ロック後に少し待って競合チェック（別プロセスが同時にロックを作った場合の猶予）
                 await Task.Delay(200, ct);
 
+                // @problem: ロックファイル名にマシン名が入るため、CreateNew では別マシンとの同時取得を
+                //           排他できず、2台が同時に Queued を見て両方が走り出す恐れがある。
+                // @solution: 待機後に他マシンの新しいロックを探し、マシン名が辞書順で小さい側を勝者にする
+                //            （全マシンが同じ規則で判断するので、必ず1台だけが残る）。
+                if (HasPriorityRival(projectDir, lockFile))
+                {
+                    ReportStatus($"スキップ（別マシンが先に取得）: {projectName}");
+                    return;
+                }
+
                 var content = ReadRcfContent(rcfPath);
                 if (content == null || !IsQueued(content))
                 {
@@ -196,7 +229,9 @@ namespace AEWatchRenderManager.Services
                 var aepPath = Path.Combine(projectDir, projectName + ".aep");
                 if (!File.Exists(aepPath))
                 {
-                    aepPath = Directory.GetFiles(projectDir, "*.aep").FirstOrDefault() ?? aepPath;
+                    // 名前が一致しない場合は AEP が1つだけのときに限って採用する（複数あると別のファイルを実行しかねない）
+                    var candidates = Directory.GetFiles(projectDir, "*.aep");
+                    if (candidates.Length == 1) aepPath = candidates[0];
                 }
                 if (!File.Exists(aepPath))
                 {
@@ -208,7 +243,7 @@ namespace AEWatchRenderManager.Services
                 var aepMajor = AerenderPathResolver.ReadAepMajorVersion(aepPath);
                 var aerenderPath =
                     (aepMajor > 0 ? AerenderPathResolver.FindForVersion(aepMajor) : null)
-                    ?? (!string.IsNullOrEmpty(userAerenderPath) && File.Exists(userAerenderPath) ? userAerenderPath : null)
+                    ?? (AerenderPathResolver.IsAerenderExe(userAerenderPath) ? userAerenderPath : null)
                     ?? AerenderPathResolver.FindNewest();
 
                 if (aerenderPath == null)
@@ -259,14 +294,15 @@ namespace AEWatchRenderManager.Services
             string aerenderPath, string aepPath, CancellationToken ct)
         {
             // 最小化で起動して作業の邪魔にならないようにする。
-            // ワーカー自動参加は常に /C（完了後にウィンドウが自動で閉じる）で起動する。
-            const string cmdSwitch = "/C";
+            // @problem: cmd.exe 経由だと、ファイル名の %VAR% がクォート内でも展開される。
+            // @solution: cmd を介さず aerender.exe を直接起動する（ウィンドウは完了後に自動で閉じる）。
+            //            UseShellExecute=true は WindowStyle=Minimized を効かせるためで、cmd は通らない。
             using var proc = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"{cmdSwitch} \"\"{aerenderPath}\" -project \"{aepPath}\"\"",
+                    FileName = aerenderPath,
+                    Arguments = $"-project \"{aepPath}\"",
                     UseShellExecute = true,
                     WindowStyle = ProcessWindowStyle.Minimized
                 }

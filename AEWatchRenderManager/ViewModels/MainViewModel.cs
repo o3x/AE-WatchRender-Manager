@@ -16,8 +16,8 @@ using System.Windows.Threading;
 
 namespace AEWatchRenderManager.ViewModels
 {
-    // Date: Mon Aug 10 11:46:16 JST 2026
-    // Version: 2.3.0
+    // Date: Tue Oct 27 17:42:09 JST 2026
+    // Version: 2.3.1
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -106,7 +106,7 @@ namespace AEWatchRenderManager.ViewModels
         private string _currentSortColumn = string.Empty;
         private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
 
-        private const string CurrentVersion = "2.3.0";
+        private const string CurrentVersion = "2.3.1";
         private const string GitHubApiLatest = "https://api.github.com/repos/o3x/AE-WatchRender-Manager/releases/latest";
 
         // HttpClient はインスタンスを使い回す（都度 new するとソケット枯渇の原因になる）
@@ -360,14 +360,38 @@ namespace AEWatchRenderManager.ViewModels
                     //           パスを "" で囲むだけでは不十分で cmd がパースに失敗する。
                     // @solution: cmd のスイッチに従い、コマンド全体をさらに "" で囲む。
                     //            ""path\aerender.exe" -project "path\file.aep""
-                    var cmdSwitch = KeepAerenderWindowOpen ? "/K" : "/C";
-                    Process.Start(new ProcessStartInfo
+                    //
+                    // @problem: cmd 経由だとファイル名の %VAR% がクォート内でも展開される。
+                    // @solution: 通常は cmd を介さず aerender を直接起動する。ウィンドウを残す /K のときだけ
+                    //            cmd が必要なので、% を含むパスは起動せず警告する。
+                    if (KeepAerenderWindowOpen)
                     {
-                        FileName = "cmd.exe",
-                        Arguments = $"{cmdSwitch} \"\"{aerender}\" -project \"{task.AepFilePath}\"\"",
-                        UseShellExecute = true,
-                        WindowStyle = ProcessWindowStyle.Minimized
-                    });
+                        if (aerender.Contains('%') || task.AepFilePath.Contains('%'))
+                        {
+                            System.Windows.MessageBox.Show(
+                                $"パスに「%」が含まれるため、ウィンドウを残す設定では起動できません。\n" +
+                                $"設定で「完了後もウィンドウを残す」をオフにするか、ファイル名から「%」を除いてください。\n({task.ProjectName})",
+                                "起動できません", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                            continue;
+                        }
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = "cmd.exe",
+                            Arguments = $"/K \"\"{aerender}\" -project \"{task.AepFilePath}\"\"",
+                            UseShellExecute = true,
+                            WindowStyle = ProcessWindowStyle.Minimized
+                        });
+                    }
+                    else
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = aerender,
+                            Arguments = $"-project \"{task.AepFilePath}\"",
+                            UseShellExecute = true,
+                            WindowStyle = ProcessWindowStyle.Minimized
+                        });
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -430,7 +454,7 @@ namespace AEWatchRenderManager.ViewModels
         /// </summary>
         private string? ResolveAerenderPath()
         {
-            if (!string.IsNullOrEmpty(AerenderPath) && File.Exists(AerenderPath))
+            if (AerenderPathResolver.IsAerenderExe(AerenderPath))
                 return AerenderPath;
 
             var found = AerenderPathResolver.FindNewest();
@@ -473,7 +497,9 @@ namespace AEWatchRenderManager.ViewModels
                             "アップデートあり",
                             System.Windows.MessageBoxButton.YesNo,
                             System.Windows.MessageBoxImage.Information);
-                        if (result == System.Windows.MessageBoxResult.Yes)
+                        // 応答が想定外でも任意のファイル・URL を開かないよう、自分のリポジトリのページに限る
+                        if (result == System.Windows.MessageBoxResult.Yes &&
+                            htmlUrl.StartsWith("https://github.com/o3x/AE-WatchRender-Manager/", StringComparison.Ordinal))
                             Process.Start(new ProcessStartInfo(htmlUrl) { UseShellExecute = true });
                     }
                 }

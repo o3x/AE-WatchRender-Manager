@@ -8,8 +8,8 @@ using System.Windows;
 
 namespace AEWatchRenderManager.Services
 {
-    // Date: Mon Aug 10 11:46:16 JST 2026
-    // Version: 1.16.21
+    // Date: Tue Oct 27 17:42:09 JST 2026
+    // Version: 1.16.22
     public static class StatusAnalyzer
     {
         public static async Task AnalyzeAsync(RenderTaskPair task)
@@ -43,8 +43,15 @@ namespace AEWatchRenderManager.Services
                 var htmlNameMatch = Regex.Match(rcfContent, @"html_name=""([^""]+)""");
                 if (htmlNameMatch.Success && !string.IsNullOrWhiteSpace(htmlNameMatch.Groups[1].Value))
                 {
-                    var logName = htmlNameMatch.Groups[1].Value;
-                    task.HtmlLogFilePath = Path.Combine(task.ProjectFolderPath, logName);
+                    // @problem: html_name は共有フォルダ上の RCF が書いた値で、絶対パスや ..\ を含むと
+                    //           Path.Combine がプロジェクトフォルダの外を指し、「情報表示」の
+                    //           ShellExecute で任意のファイルを実行させられる。
+                    // @solution: ファイル名部分だけを取り出し、HTML/テキスト以外の拡張子は無視する。
+                    var logName = Path.GetFileName(htmlNameMatch.Groups[1].Value);
+                    var logExt = Path.GetExtension(logName).ToLowerInvariant();
+                    task.HtmlLogFilePath = logExt is ".htm" or ".html" or ".txt"
+                        ? Path.Combine(task.ProjectFolderPath, logName)
+                        : FindReportFile(task.ProjectFolderPath, task.ProjectName);
                 }
                 else
                 {
